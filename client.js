@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
     const useLayout = typeof React.useLayoutEffect === 'function' ? React.useLayoutEffect : React.useEffect;
 
     /** The portable, attribute-driven status-bar stylesheet, verbatim. */
-    const CSS = "/* ============================================================================\n   OpenCode Desktop Status Bar — portable stylesheet\n   ----------------------------------------------------------------------------\n   Framework-agnostic. No Solid, no preprocessor, no build step. Drop this in\n   any DOM host and drive it with attributes:\n\n     <div data-sb\n          data-sb-theme=\"cyan\"        <!-- see the palette block at the bottom -->\n          data-sb-state=\"work\"        <!-- idle | work  (+ data-sb-tool on the flow) -->\n          data-sb-lite>               <!-- FX off: no full-surface motion -->\n\n   Everything chromatic flows through four custom properties, so a theme is a\n   four-line patch and every glow keyframe recolors for free.\n   ========================================================================= */\n\n/* ---------------------------------------------------------------- tokens -- */\n\n[data-sb] {\n  /* Chromatic (per theme — overridden by [data-sb-theme=\"…\"] below) */\n  --sb-glow: 0, 229, 255;      /* rgb TRIPLE, no rgb() wrapper — spliced into rgba() */\n  --sb-accent: #00e5ff;        /* solid: glyphs, sparkline, cursor, Zzzz */\n  --sb-accent2: #5ad8ff;       /* second particle lane, whale wash detail */\n  --sb-wash: #04161b;          /* FLAT full-bar tint. Never a gradient. */\n\n  /* Rhythm — one breath is one thought. Do not add easing variety here. */\n  --sb-breath-work: 3.75s;     /* 16 breaths/min, alert */\n  --sb-breath-idle: 5s;        /* 12 breaths/min, resting */\n  --sb-ease-breath: cubic-bezier(0.37, 0, 0.63, 1); /* symmetric in/out */\n\n  /* Type */\n  --sb-fs: 12px;\n  --sb-fs-status: 12.5px;      /* the phrase is the only text allowed above 12 */\n  --sb-fs-meta: 11px;\n  --sb-text: #f2f7ff;\n  --sb-fs-family: inherit;     /* never set a font — inherit the host's UI face */\n\n  /* Layout */\n  --sb-gap-col: 18px;\n  --sb-gap-row: 3px;\n  --sb-pad-x: 16px;\n  --sb-pad-y: 6px;             /* host-adjustable 2–18px */\n\n  /* Particle lane */\n  --sb-flow-w: 128px;\n  --sb-flow-h: 17px;\n  --sb-flow-dur: 1.4s;         /* driven by tok/s — see STYLE.md §7 */\n}\n\n/* ----------------------------------------------------------------- shell -- */\n\n[data-sb] {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  column-gap: var(--sb-gap-col);\n  row-gap: var(--sb-gap-row);\n  width: 100%;\n  padding: var(--sb-pad-y) var(--sb-pad-x);\n  font-family: var(--sb-fs-family);\n  font-size: var(--sb-fs);\n  letter-spacing: 0.3px;\n  color: var(--sb-text);\n  background: #000000;                        /* true black, AMOLED-first */\n  border-top: 1px solid rgba(255, 255, 255, 0.06);\n  box-shadow: inset 0 0 30px rgba(var(--sb-glow), 0.10);\n  position: relative;\n  user-select: none;\n}\n\n/* Groups of related segments, separated by dim `·` glyphs. */\n[data-sb] .sb-group { display: flex; align-items: center; gap: 10px; white-space: nowrap }\n[data-sb] .sb-group.end { margin-left: auto }\n[data-sb] .sb-sep { opacity: 0.35 }\n\n/* The strip itself breathes. One cycle = one thought; speed IS the state. */\n[data-sb][data-sb-state=\"work\"] { animation: sb-breathe var(--sb-breath-work) var(--sb-ease-breath) infinite }\n[data-sb][data-sb-state=\"idle\"] { animation: sb-breathe-idle var(--sb-breath-idle) var(--sb-ease-breath) infinite }\n\n/* Any text that should pulse with the breath — the status phrase, the glyph. */\n[data-sb] .sb-glow { animation: sb-glow var(--sb-breath-work) var(--sb-ease-breath) infinite }\n[data-sb] .sb-alert { animation: sb-alert 1.6s ease-in-out infinite }\n\n/* ---------------------------------------------------------- status phrase -- */\n\n/* Fixed 27ch slot: phrases rotate, the bar must never shuffle sideways. */\n[data-sb] .sb-status {\n  display: inline-block;\n  min-width: 27ch;\n  max-width: 27ch;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  vertical-align: middle;\n  font-size: var(--sb-fs-status);\n}\n/* Idle is quiet, not disabled. Below ~.8 opacity it reads as greyed-out UI. */\n[data-sb][data-sb-state=\"idle\"] .sb-status {\n  opacity: 0.88;\n  font-style: italic;\n  font-weight: 500;\n  color: #eaf2fd;\n  text-shadow: 0 0 7px rgba(var(--sb-glow), 0.35);\n}\n/* Working text is the accent lifted toward white: a raw accent is unreadable\n   on dark palettes (#4d6bfe on #000 is a muddy navy). The first declaration is\n   the fallback; color-mix overrides it wherever supported. */\n[data-sb][data-sb-state=\"work\"] .sb-status {\n  color: var(--sb-text);\n  color: color-mix(in srgb, var(--sb-accent) 42%, #ffffff);\n  font-weight: 600;\n}\n\n/* Claude-style glyph: always glowing, morphs while working. Fixed box width —\n   the glyph set has different advance widths and would shift the whole bar. */\n[data-sb] .sb-flower {\n  display: inline-block;\n  width: 1.2em;\n  text-align: center;\n  font-size: 12px;\n  line-height: 1;\n  color: var(--sb-accent);\n  animation: sb-glow var(--sb-breath-work) var(--sb-ease-breath) infinite;\n}\n[data-sb] .sb-flower.idle {\n  animation: sb-glow-soft var(--sb-breath-idle) var(--sb-ease-breath) infinite;\n}\n\n/* Soft ellipsis, or a hard block cursor for terminal skins. */\n[data-sb] .sb-dots i { display: inline-block; animation: sb-dotfade 1.2s ease-in-out infinite }\n[data-sb] .sb-dots i:nth-child(2) { animation-delay: 0.18s }\n[data-sb] .sb-dots i:nth-child(3) { animation-delay: 0.36s }\n[data-sb] .sb-cursor { display: inline-block; margin-left: 2px; animation: sb-blink 1.05s steps(1) infinite }\n\n/* Sleeping Zzzz: one lazy puff per breath, drifting up and out. */\n[data-sb] .sb-zzz {\n  display: inline-block;\n  margin-left: 6px;\n  font-style: normal;\n  font-size: 10px;\n  font-weight: 700;\n  letter-spacing: 0.5px;\n  color: var(--sb-accent);\n  vertical-align: 1px;\n}\n[data-sb] .sb-zzz i { display: inline-block; font-style: normal; animation: sb-zz var(--sb-breath-idle) ease-out infinite }\n[data-sb] .sb-zzz i:nth-child(2) { animation-delay: 0.55s }\n[data-sb] .sb-zzz i:nth-child(3) { animation-delay: 1.1s }\n[data-sb] .sb-zzz i:nth-child(4) { animation-delay: 1.65s }\n\n[data-sb] .sb-queue { margin-left: 6px; color: #ffc400; font-size: 11px; font-weight: 700; text-shadow: none }\n\n/* ------------------------------------------------------- token pipeline -- */\n\n/* 8 beads, two lanes, left → right. Duration encodes tok/s; nothing else does. */\n[data-sb] .sb-flow {\n  position: relative;\n  display: inline-block;\n  width: var(--sb-flow-w);\n  height: var(--sb-flow-h);\n  overflow: hidden;\n  vertical-align: middle;\n}\n[data-sb] .sb-flow i {\n  position: absolute;\n  left: 0;\n  top: 2px;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: #f8fafc;\n  box-shadow: 0 0 10px rgba(var(--sb-glow), 1), 0 0 3px rgba(255, 255, 255, 0.95);\n  animation: sb-flow var(--sb-flow-dur) linear infinite;\n}\n[data-sb] .sb-flow i:nth-child(2) { animation-delay: calc(var(--sb-flow-dur) * -0.125) }\n[data-sb] .sb-flow i:nth-child(3) { animation-delay: calc(var(--sb-flow-dur) * -0.25) }\n[data-sb] .sb-flow i:nth-child(4) { animation-delay: calc(var(--sb-flow-dur) * -0.375) }\n[data-sb] .sb-flow i:nth-child(5) { animation-delay: calc(var(--sb-flow-dur) * -0.5) }\n[data-sb] .sb-flow i:nth-child(6) { animation-delay: calc(var(--sb-flow-dur) * -0.625) }\n[data-sb] .sb-flow i:nth-child(7) { animation-delay: calc(var(--sb-flow-dur) * -0.75) }\n[data-sb] .sb-flow i:nth-child(8) { animation-delay: calc(var(--sb-flow-dur) * -0.875) }\n[data-sb] .sb-flow i:nth-child(even) {\n  top: 10px;\n  width: 5px;\n  height: 5px;\n  background: var(--sb-accent2);\n  box-shadow: 0 0 9px rgba(var(--sb-glow), 0.95);\n}\n[data-sb] .sb-flow.idle i { background: #64748b; box-shadow: none }\n\n/* Factory mode: bits get pinched down and machined through a spinning gear. */\n[data-sb] .sb-flow.tool i {\n  background: #ffe066;\n  box-shadow: 0 0 10px rgba(255, 196, 0, 0.95);\n  animation-name: sb-flow-factory;\n}\n[data-sb] .sb-flow.tool i:nth-child(even) { background: #ffc400; box-shadow: 0 0 9px rgba(255, 196, 0, 0.9) }\n[data-sb] .sb-flow-gear {\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  z-index: 2;\n  width: 12px;\n  height: 12px;\n  margin: -6px 0 0 -6px;\n  line-height: 12px;\n  text-align: center;\n  font-size: 11px;\n  color: #ffc400;\n  opacity: 0;\n  pointer-events: none;\n  text-shadow: 0 0 8px rgba(255, 196, 0, 0.9);\n  transition: opacity 0.18s ease;\n}\n[data-sb] .sb-flow.tool .sb-flow-gear { opacity: 1; animation: sb-spin 1.6s linear infinite }\n\n/* ------------------------------------------------------------- meters ---- */\n\n/* Cache hit rate as block glyphs: zero subpixel blur, monospace-safe. */\n[data-sb] .sb-blocks { display: inline-block; font-size: var(--sb-fs-meta); line-height: 1; letter-spacing: 1px; vertical-align: middle }\n[data-sb] .sb-blocks .on { color: inherit; text-shadow: 0 0 7px currentColor }\n[data-sb] .sb-blocks .off { opacity: 0.25 }\n[data-sb] .sb-num { font-variant-numeric: tabular-nums }\n\n[data-sb] .sb-flash { animation: sb-flash 0.9s ease-out 1 }\n[data-sb] .sb-bump {\n  position: absolute;\n  left: 100%;\n  top: -3px;\n  margin-left: 5px;\n  font-size: 10px;\n  font-weight: 700;\n  color: #00e676;\n  pointer-events: none;\n  white-space: nowrap;\n  animation: sb-bump 1.2s ease-out forwards;\n}\n[data-sb] .sb-loading { animation: sb-loading 1.3s ease-in-out infinite }\n\n/* ---------------------------------------------------------------- splash -- */\n\n/* Two crests enter from the ends, converge on the click, swell at contact,\n   then bounce home. --sb-x = meeting point in px, --sb-w = bar width in px.\n   Defaults keep the wave sane if a host forgets to measure. */\n[data-sb] .sb-splash { position: absolute; inset: 0; pointer-events: none; overflow: hidden; display: none; --sb-x: 50vw; --sb-w: 100vw }\n[data-sb] .sb-splash.go { display: block }\n[data-sb] .sb-splash i {\n  position: absolute;\n  left: var(--sb-sx, 13%);\n  top: 50%;\n  width: 200px;\n  height: 200px;\n  margin: -100px 0 0 -100px;\n  border-radius: 50%;\n  opacity: 0;\n  background: radial-gradient(circle, rgba(var(--sb-glow), 0.6) 0%, rgba(var(--sb-glow), 0.18) 45%, transparent 72%);\n}\n[data-sb] .sb-splash b,\n[data-sb] .sb-splash u {\n  position: absolute;\n  top: -40%;\n  width: 220px;\n  height: 180%;\n  margin-left: -110px;                        /* centres land exactly on the target */\n  border-radius: 50%;\n  opacity: 0;\n  background: radial-gradient(ellipse at center, rgba(var(--sb-glow), 0.5) 0%, rgba(var(--sb-glow), 0.16) 45%, transparent 72%);\n}\n[data-sb] .sb-splash b { left: 0 }            /* left crest travels right */\n[data-sb] .sb-splash u { left: 100% }         /* right crest travels left */\n[data-sb] .sb-splash.go i { animation: sb-impact 0.55s ease-out 0.4s forwards }\n[data-sb] .sb-splash.go b { animation: sb-wave-in-r 1.2s cubic-bezier(0.3, 0.6, 0.35, 1) forwards }\n[data-sb] .sb-splash.go u { animation: sb-wave-in-l 1.2s cubic-bezier(0.3, 0.6, 0.35, 1) forwards }\n\n/* Incoming-event flash: one-shot inset glow over the whole strip. */\n[data-sb] .sb-ping { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; animation: sb-ping 0.55s ease-out 1 }\n\n/* ---------------------------------------------------------- ocean / VT ---- */\n\n/* Whale is driving: flat wash + a single glint sweeping the top edge. */\n[data-sb][data-sb-ocean] {\n  background: var(--sb-wash);\n  border-top: 1px solid var(--sb-accent);\n  box-shadow: inset 0 0 30px rgba(var(--sb-glow), 0.14);\n}\n[data-sb][data-sb-ocean]::after {\n  content: \"\";\n  position: absolute;\n  left: 0;\n  right: 0;\n  top: 0;\n  height: 2px;\n  pointer-events: none;\n  opacity: 0.75;\n  background: linear-gradient(90deg, transparent 0%, rgba(var(--sb-glow), 0.75) 50%, transparent 100%);\n  background-size: 200% 100%;\n  animation: sb-wave 7s linear infinite;\n}\n[data-sb][data-sb-ocean] .sb-flow.idle i { background: #475569; box-shadow: none }\n\n/* Hover: lean in a touch; the card reveals the numbers the bar truncates. */\n[data-sb][data-sb-hover] { filter: brightness(1.08) }\n\n/* Scanline skin: faint CRT raster over everything, above the content. */\n[data-sb][data-sb-scan]::before {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  z-index: 1;\n  pointer-events: none;\n  opacity: 0.16;\n  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0 1px, transparent 1px 3px);\n}\n\n/* ---------------------------------------------------------------- card ---- */\n\n/* Anchored bottom-left of the bar. Never follows the pointer. 300px wide. */\n[data-sb] .sb-card {\n  position: absolute;\n  left: 12px;\n  bottom: calc(100% + 8px);\n  z-index: 50;\n  width: 300px;\n  max-width: calc(100vw - 28px);\n  padding: 8px 11px;\n  border-radius: 10px;\n  pointer-events: auto;\n  font-size: 11px;\n  line-height: 1.6;\n  background: #000000;\n  border: 1px solid rgba(var(--sb-glow), 0.22);\n  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.95);\n  animation: sb-card-in 0.16s ease-out 1;\n}\n[data-sb] .sb-card::after {\n  content: \"\";\n  position: absolute;\n  top: 100%;\n  left: 50%;\n  margin-left: -5px;\n  border: 5px solid transparent;\n  border-top-color: rgba(var(--sb-glow), 0.22);\n}\n[data-sb] .sb-card.pinned { border-color: rgba(var(--sb-glow), 0.45) }\n\n[data-sb] .sb-row { display: flex; justify-content: space-between; gap: 16px; white-space: nowrap }\n[data-sb] .sb-k { color: rgba(150, 170, 190, 0.9) }\n[data-sb] .sb-v { color: #ffffff; font-variant-numeric: tabular-nums }\n\n[data-sb] .sb-spark { display: block; width: 100%; height: 26px; margin-top: 5px }\n[data-sb] .sb-spark polyline {\n  fill: none;\n  stroke: var(--sb-accent);\n  stroke-width: 1.5;\n  stroke-linejoin: round;\n  stroke-linecap: round;\n  filter: drop-shadow(0 0 3px rgba(var(--sb-glow), 0.85));\n}\n[data-sb] .sb-spark-base { stroke: rgba(255, 255, 255, 0.1); stroke-width: 1 }\n\n[data-sb] .sb-palette {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  margin-top: 7px;\n  padding-top: 7px;\n  border-top: 1px solid rgba(255, 255, 255, 0.08);\n  pointer-events: auto;\n}\n[data-sb] .sb-swatch {\n  width: 13px;\n  height: 13px;\n  padding: 0;\n  border-radius: 50%;\n  border: 1px solid rgba(255, 255, 255, 0.28);\n  cursor: pointer;\n  transition: transform 0.12s ease, border-color 0.15s ease;\n}\n[data-sb] .sb-swatch:hover { transform: scale(1.18) }\n[data-sb] .sb-swatch.on { border: 2px solid #ffffff }\n\n[data-sb] .sb-tools { display: flex; align-items: center; gap: 5px; margin-top: 7px; pointer-events: auto }\n[data-sb] .sb-tool-k { font-size: 9.5px; letter-spacing: 0.6px; text-transform: uppercase; color: rgba(150, 170, 190, 0.85) }\n[data-sb] .sb-tool-v { min-width: 26px; text-align: center; font-size: 10px; color: #fff; font-variant-numeric: tabular-nums }\n[data-sb] .sb-mini {\n  width: 16px;\n  height: 16px;\n  padding: 0;\n  line-height: 1;\n  border-radius: 4px;\n  border: 1px solid rgba(255, 255, 255, 0.18);\n  background: transparent;\n  color: #cfd9e6;\n  font: inherit;\n  font-size: 11px;\n  cursor: pointer;\n}\n[data-sb] .sb-mini:hover { border-color: rgba(var(--sb-glow), 0.65); color: #fff }\n[data-sb] .sb-fx {\n  margin-left: auto;\n  padding: 2px 7px;\n  border-radius: 6px;\n  border: 1px solid rgba(255, 255, 255, 0.18);\n  background: transparent;\n  color: #cfd9e6;\n  font: inherit;\n  font-size: 9.5px;\n  letter-spacing: 0.5px;\n  text-transform: uppercase;\n  cursor: pointer;\n}\n[data-sb] .sb-fx:hover { border-color: rgba(var(--sb-glow), 0.65); color: #fff }\n\n/* ------------------------------------------------------------- lite mode -- */\n\n/* FX off. Kills every full-surface repaint, keeps small motion. State stays\n   identical — lite is a rendering budget, never a different information set. */\n[data-sb][data-sb-lite] { box-shadow: none !important; animation: none !important }\n[data-sb][data-sb-lite][data-sb-hover] { filter: none }\n[data-sb][data-sb-lite] .sb-ping { display: none }\n[data-sb][data-sb-lite] .sb-splash { display: none !important }\n[data-sb][data-sb-lite] .sb-spark polyline { filter: none }\n/* Freeze the breath but keep a static halo — lite must not mean dim text. */\n[data-sb][data-sb-lite] .sb-glow {\n  animation: none !important;\n  text-shadow: 0 0 8px rgba(var(--sb-glow), 0.6);\n}\n[data-sb][data-sb-lite] .sb-card,\n[data-sb][data-sb-lite] .sb-swatch { transition: none }\n\n/* ----------------------------------------------------------- keyframes --- */\n\n/* Asymmetric on purpose: inhale at 0–38%, short hold to 46%, slow exhale out.\n   A symmetric sine reads as a machine pulsing; this reads as breathing. */\n@keyframes sb-breathe {\n  0%   { box-shadow: inset 0 0 26px rgba(var(--sb-glow), 0.30), 0 0 12px rgba(var(--sb-glow), 0.12) }\n  38%  { box-shadow: inset 0 0 62px rgba(var(--sb-glow), 0.70), 0 0 26px rgba(var(--sb-glow), 0.35) }\n  46%  { box-shadow: inset 0 0 56px rgba(var(--sb-glow), 0.62), 0 0 23px rgba(var(--sb-glow), 0.31) }\n  100% { box-shadow: inset 0 0 26px rgba(var(--sb-glow), 0.30), 0 0 12px rgba(var(--sb-glow), 0.12) }\n}\n@keyframes sb-breathe-idle {\n  0%   { box-shadow: inset 0 0 20px rgba(var(--sb-glow), 0.14), 0 0 8px rgba(var(--sb-glow), 0.05) }\n  38%  { box-shadow: inset 0 0 46px rgba(var(--sb-glow), 0.38), 0 0 16px rgba(var(--sb-glow), 0.16) }\n  46%  { box-shadow: inset 0 0 41px rgba(var(--sb-glow), 0.33), 0 0 14px rgba(var(--sb-glow), 0.13) }\n  100% { box-shadow: inset 0 0 20px rgba(var(--sb-glow), 0.14), 0 0 8px rgba(var(--sb-glow), 0.05) }\n}\n@keyframes sb-glow {\n  0%   { text-shadow: 0 0 6px rgba(var(--sb-glow), 0.40) }\n  38%  { text-shadow: 0 0 14px rgba(var(--sb-glow), 0.95) }\n  46%  { text-shadow: 0 0 12px rgba(var(--sb-glow), 0.85) }\n  100% { text-shadow: 0 0 6px rgba(var(--sb-glow), 0.40) }\n}\n@keyframes sb-glow-soft {\n  0%   { text-shadow: 0 0 4px rgba(var(--sb-glow), 0.45) }\n  38%  { text-shadow: 0 0 9px rgba(var(--sb-glow), 0.85) }\n  46%  { text-shadow: 0 0 8px rgba(var(--sb-glow), 0.75) }\n  100% { text-shadow: 0 0 4px rgba(var(--sb-glow), 0.45) }\n}\n@keyframes sb-alert {\n  0%, 100% { text-shadow: 0 0 6px rgba(255, 23, 68, 0.35) }\n  50%      { text-shadow: 0 0 14px rgba(255, 23, 68, 0.95) }\n}\n@keyframes sb-dotfade { 0%, 100% { opacity: 0.2 } 50% { opacity: 1 } }\n@keyframes sb-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }\n@keyframes sb-zz {\n  0%   { opacity: 0; transform: translate(0, 2px) scale(0.7) }\n  28%  { opacity: 0.9 }\n  100% { opacity: 0; transform: translate(4px, -9px) scale(1.2) }\n}\n@keyframes sb-flow {\n  0%   { opacity: 0; transform: translateX(0) }\n  12%  { opacity: 1 }\n  88%  { opacity: 1 }\n  100% { opacity: 0; transform: translateX(128px) }\n}\n/* Pinch to 34% through the middle, where the gear sits. */\n@keyframes sb-flow-factory {\n  0%   { opacity: 0;    transform: translateX(0)   scale(0.7) }\n  12%  { opacity: 1;    transform: translateX(16px) scale(1) }\n  44%  { opacity: 0.55; transform: translateX(55px) scale(0.34) }\n  56%  { opacity: 0.55; transform: translateX(73px) scale(0.34) }\n  88%  { opacity: 1;    transform: translateX(112px) scale(1) }\n  100% { opacity: 0;    transform: translateX(128px) scale(0.7) }\n}\n@keyframes sb-wave { 0% { background-position: -160% 0 } 100% { background-position: 160% 0 } }\n@keyframes sb-ping {\n  0%   { box-shadow: inset 0 0 0 rgba(var(--sb-glow), 0); opacity: 1 }\n  20%  { box-shadow: inset 0 0 70px rgba(var(--sb-glow), 0.85) }\n  100% { box-shadow: inset 0 0 0 rgba(var(--sb-glow), 0); opacity: 0 }\n}\n@keyframes sb-impact {\n  0%   { transform: scale(0.2); opacity: 0 }\n  30%  { transform: scale(1.1); opacity: 1 }\n  100% { transform: scale(2.6); opacity: 0 }\n}\n/* 45% → 55% hold is the collision: they swell at contact instead of passing\n   through each other, then rebound. Don't collapse that hold. */\n@keyframes sb-wave-in-r {\n  0%   { transform: translateX(0) scaleX(0.55); opacity: 0 }\n  12%  { opacity: 0.9 }\n  45%  { transform: translateX(var(--sb-x)) scaleX(1.15); opacity: 1 }\n  55%  { transform: translateX(var(--sb-x)) scaleX(1.4); opacity: 1 }\n  100% { transform: translateX(0) scaleX(0.55); opacity: 0 }\n}\n@keyframes sb-wave-in-l {\n  0%   { transform: translateX(0) scaleX(0.55); opacity: 0 }\n  12%  { opacity: 0.9 }\n  45%  { transform: translateX(calc(var(--sb-x) - var(--sb-w))) scaleX(1.15); opacity: 1 }\n  55%  { transform: translateX(calc(var(--sb-x) - var(--sb-w))) scaleX(1.4); opacity: 1 }\n  100% { transform: translateX(0) scaleX(0.55); opacity: 0 }\n}\n@keyframes sb-flash {\n  0%   { filter: none }\n  25%  { filter: brightness(1.9) drop-shadow(0 0 6px currentColor) }\n  100% { filter: none }\n}\n@keyframes sb-bump {\n  0%   { opacity: 1; transform: translateY(0) }\n  60%  { opacity: 1; transform: translateY(-7px) }\n  100% { opacity: 0; transform: translateY(-12px) }\n}\n@keyframes sb-loading { 0%, 100% { opacity: 0.35 } 50% { opacity: 0.95 } }\n@keyframes sb-spin { to { transform: rotate(360deg) } }\n@keyframes sb-card-in { from { opacity: 0 } to { opacity: 1 } }\n\n/* ------------------------------------------------------------- palettes -- */\n\n/* 12 presets. Add one by copying four lines — every glow in the file follows. */\n\n[data-sb][data-sb-theme=\"cyan\"]      { --sb-accent:#00e5ff; --sb-accent2:#5ad8ff; --sb-glow:0,229,255;   --sb-wash:#04161b }\n[data-sb][data-sb-theme=\"green\"]     { --sb-accent:#00e676; --sb-accent2:#57e39a; --sb-glow:0,230,118;   --sb-wash:#04160c }\n[data-sb][data-sb-theme=\"matrix\"]    { --sb-accent:#00ff6a; --sb-accent2:#0aff9d; --sb-glow:0,255,106;   --sb-wash:#02120a }\n[data-sb][data-sb-theme=\"magenta\"]   { --sb-accent:#ff2d95; --sb-accent2:#ff7ab8; --sb-glow:255,45,149;  --sb-wash:#170510 }\n[data-sb][data-sb-theme=\"violet\"]    { --sb-accent:#b026ff; --sb-accent2:#c777ff; --sb-glow:176,38,255;  --sb-wash:#100518 }\n[data-sb][data-sb-theme=\"amber\"]     { --sb-accent:#ffb300; --sb-accent2:#ffcf66; --sb-glow:255,179,0;   --sb-wash:#150f03 }\n[data-sb][data-sb-theme=\"ice\"]       { --sb-accent:#8ad8ff; --sb-accent2:#c7ecff; --sb-glow:138,216,255; --sb-wash:#05111a }\n[data-sb][data-sb-theme=\"blood\"]     { --sb-accent:#ff1744; --sb-accent2:#ff6b86; --sb-glow:255,23,68;   --sb-wash:#150306 }\n[data-sb][data-sb-theme=\"cyberpunk\"] { --sb-accent:#fcee0a; --sb-accent2:#ff2d95; --sb-glow:252,238,10;  --sb-wash:#14120a }\n[data-sb][data-sb-theme=\"cyberwar\"]  { --sb-accent:#ff2b2b; --sb-accent2:#39ff14; --sb-glow:255,43,43;   --sb-wash:#140606 }\n[data-sb][data-sb-theme=\"superblack\"]{ --sb-accent:#ffffff; --sb-accent2:#9aa4b2; --sb-glow:255,255,255; --sb-wash:#000000 }\n[data-sb][data-sb-theme=\"deepseek\"]  { --sb-accent:#4d6bfe; --sb-accent2:#679efe; --sb-glow:77,107,254;  --sb-wash:#0b1226 }\n\n@media (prefers-reduced-motion: reduce) {\n  /* Host may also expose this as data-sb-lite. Both are wiring, not policy. */\n  [data-sb] { animation: none }\n}\n";
+    const CSS = "/* ============================================================================\r\n   OpenCode Desktop Status Bar — portable stylesheet\r\n   ----------------------------------------------------------------------------\r\n   Framework-agnostic. No Solid, no preprocessor, no build step. Drop this in\r\n   any DOM host and drive it with attributes:\r\n\r\n     <div data-sb\r\n          data-sb-theme=\"cyan\"        <!-- see the palette block at the bottom -->\r\n          data-sb-state=\"work\"        <!-- idle | work  (+ data-sb-tool on the flow) -->\r\n          data-sb-lite>               <!-- FX off: no full-surface motion -->\r\n\r\n   Everything chromatic flows through four custom properties, so a theme is a\r\n   four-line patch and every glow keyframe recolors for free.\r\n   ========================================================================= */\r\n\r\n/* ---------------------------------------------------------------- tokens -- */\r\n\r\n[data-sb] {\r\n  /* Chromatic (per theme — overridden by [data-sb-theme=\"…\"] below) */\r\n  --sb-glow: 0, 229, 255;      /* rgb TRIPLE, no rgb() wrapper — spliced into rgba() */\r\n  --sb-accent: #00e5ff;        /* solid: glyphs, sparkline, cursor, Zzzz */\r\n  --sb-accent2: #5ad8ff;       /* second particle lane, whale wash detail */\r\n  --sb-wash: #04161b;          /* FLAT full-bar tint. Never a gradient. */\r\n\r\n  /* Rhythm — one breath is one thought. Do not add easing variety here. */\r\n  --sb-breath-work: 3.75s;     /* 16 breaths/min, alert */\r\n  --sb-breath-idle: 5s;        /* 12 breaths/min, resting */\r\n  --sb-ease-breath: cubic-bezier(0.37, 0, 0.63, 1); /* symmetric in/out */\r\n\r\n  /* Type */\r\n  --sb-fs: 12px;\r\n  --sb-fs-status: 12.5px;      /* the phrase is the only text allowed above 12 */\r\n  --sb-fs-meta: 11px;\r\n  --sb-text: #f2f7ff;\r\n  --sb-fs-family: inherit;     /* never set a font — inherit the host's UI face */\r\n\r\n  /* Layout */\r\n  --sb-gap-col: 18px;\r\n  --sb-gap-row: 3px;\r\n  --sb-pad-x: 16px;\r\n  --sb-pad-y: 6px;             /* host-adjustable 2–18px */\r\n\r\n  /* Particle lane */\r\n  --sb-flow-w: 128px;\r\n  --sb-flow-h: 17px;\r\n  --sb-flow-dur: 1.4s;         /* driven by tok/s — see STYLE.md §7 */\r\n}\r\n\r\n/* ----------------------------------------------------------------- shell -- */\r\n\r\n[data-sb] {\r\n  display: flex;\r\n  align-items: center;\r\n  flex-wrap: wrap;\r\n  column-gap: var(--sb-gap-col);\r\n  row-gap: var(--sb-gap-row);\r\n  width: 100%;\r\n  padding: var(--sb-pad-y) var(--sb-pad-x);\r\n  font-family: var(--sb-fs-family);\r\n  font-size: var(--sb-fs);\r\n  letter-spacing: 0.3px;\r\n  color: var(--sb-text);\r\n  background: #000000;                        /* true black, AMOLED-first */\r\n  border-top: 1px solid rgba(255, 255, 255, 0.06);\r\n  box-shadow: inset 0 0 30px rgba(var(--sb-glow), 0.10);\r\n  position: relative;\r\n  user-select: none;\r\n}\r\n\r\n/* Groups of related segments, separated by dim `·` glyphs. */\r\n[data-sb] .sb-group { display: flex; align-items: center; gap: 10px; white-space: nowrap }\r\n[data-sb] .sb-group.end { margin-left: auto }\r\n[data-sb] .sb-sep { opacity: 0.35 }\r\n\r\n/* The strip itself breathes. One cycle = one thought; speed IS the state. */\r\n[data-sb][data-sb-state=\"work\"] { animation: sb-breathe var(--sb-breath-work) var(--sb-ease-breath) infinite }\r\n[data-sb][data-sb-state=\"idle\"] { animation: sb-breathe-idle var(--sb-breath-idle) var(--sb-ease-breath) infinite }\r\n\r\n/* Any text that should pulse with the breath — the status phrase, the glyph. */\r\n[data-sb] .sb-glow { animation: sb-glow var(--sb-breath-work) var(--sb-ease-breath) infinite }\r\n[data-sb] .sb-alert { animation: sb-alert 1.6s ease-in-out infinite }\r\n\r\n/* ---------------------------------------------------------- status phrase -- */\r\n\r\n/* Fixed 27ch slot: phrases rotate, the bar must never shuffle sideways. */\r\n[data-sb] .sb-status {\r\n  display: inline-block;\r\n  min-width: 27ch;\r\n  max-width: 27ch;\r\n  overflow: hidden;\r\n  text-overflow: ellipsis;\r\n  white-space: nowrap;\r\n  vertical-align: middle;\r\n  font-size: var(--sb-fs-status);\r\n}\r\n/* Idle is quiet, not disabled. Below ~.8 opacity it reads as greyed-out UI. */\r\n[data-sb][data-sb-state=\"idle\"] .sb-status {\r\n  opacity: 0.88;\r\n  font-style: italic;\r\n  font-weight: 500;\r\n  color: #eaf2fd;\r\n  text-shadow: 0 0 7px rgba(var(--sb-glow), 0.35);\r\n}\r\n/* Working text is the accent lifted toward white: a raw accent is unreadable\r\n   on dark palettes (#4d6bfe on #000 is a muddy navy). The first declaration is\r\n   the fallback; color-mix overrides it wherever supported. */\r\n[data-sb][data-sb-state=\"work\"] .sb-status {\r\n  color: var(--sb-text);\r\n  color: color-mix(in srgb, var(--sb-accent) 42%, #ffffff);\r\n  font-weight: 600;\r\n}\r\n\r\n/* Claude-style glyph: always glowing, morphs while working. Fixed box width —\r\n   the glyph set has different advance widths and would shift the whole bar. */\r\n[data-sb] .sb-flower {\r\n  display: inline-block;\r\n  width: 1.2em;\r\n  text-align: center;\r\n  font-size: 12px;\r\n  line-height: 1;\r\n  color: var(--sb-accent);\r\n  animation: sb-glow var(--sb-breath-work) var(--sb-ease-breath) infinite;\r\n}\r\n[data-sb] .sb-flower.idle {\r\n  animation: sb-glow-soft var(--sb-breath-idle) var(--sb-ease-breath) infinite;\r\n}\r\n\r\n/* Soft ellipsis, or a hard block cursor for terminal skins. */\r\n[data-sb] .sb-dots i { display: inline-block; animation: sb-dotfade 1.2s ease-in-out infinite }\r\n[data-sb] .sb-dots i:nth-child(2) { animation-delay: 0.18s }\r\n[data-sb] .sb-dots i:nth-child(3) { animation-delay: 0.36s }\r\n[data-sb] .sb-cursor { display: inline-block; margin-left: 2px; animation: sb-blink 1.05s steps(1) infinite }\r\n\r\n/* Sleeping Zzzz: one lazy puff per breath, drifting up and out. */\r\n[data-sb] .sb-zzz {\r\n  display: inline-block;\r\n  margin-left: 6px;\r\n  font-style: normal;\r\n  font-size: 10px;\r\n  font-weight: 700;\r\n  letter-spacing: 0.5px;\r\n  color: var(--sb-accent);\r\n  vertical-align: 1px;\r\n}\r\n[data-sb] .sb-zzz i { display: inline-block; font-style: normal; animation: sb-zz var(--sb-breath-idle) ease-out infinite }\r\n[data-sb] .sb-zzz i:nth-child(2) { animation-delay: 0.55s }\r\n[data-sb] .sb-zzz i:nth-child(3) { animation-delay: 1.1s }\r\n[data-sb] .sb-zzz i:nth-child(4) { animation-delay: 1.65s }\r\n\r\n[data-sb] .sb-queue { margin-left: 6px; color: #ffc400; font-size: 11px; font-weight: 700; text-shadow: none }\r\n\r\n/* ------------------------------------------------------- token pipeline -- */\r\n\r\n/* 8 beads, two lanes, left → right. Duration encodes tok/s; nothing else does. */\r\n[data-sb] .sb-flow {\r\n  position: relative;\r\n  display: inline-block;\r\n  width: var(--sb-flow-w);\r\n  height: var(--sb-flow-h);\r\n  overflow: hidden;\r\n  vertical-align: middle;\r\n}\r\n[data-sb] .sb-flow i {\r\n  position: absolute;\r\n  left: 0;\r\n  top: 2px;\r\n  width: 6px;\r\n  height: 6px;\r\n  border-radius: 50%;\r\n  background: #f8fafc;\r\n  box-shadow: 0 0 10px rgba(var(--sb-glow), 1), 0 0 3px rgba(255, 255, 255, 0.95);\r\n  animation: sb-flow var(--sb-flow-dur) linear infinite;\r\n}\r\n[data-sb] .sb-flow i:nth-child(2) { animation-delay: calc(var(--sb-flow-dur) * -0.125) }\r\n[data-sb] .sb-flow i:nth-child(3) { animation-delay: calc(var(--sb-flow-dur) * -0.25) }\r\n[data-sb] .sb-flow i:nth-child(4) { animation-delay: calc(var(--sb-flow-dur) * -0.375) }\r\n[data-sb] .sb-flow i:nth-child(5) { animation-delay: calc(var(--sb-flow-dur) * -0.5) }\r\n[data-sb] .sb-flow i:nth-child(6) { animation-delay: calc(var(--sb-flow-dur) * -0.625) }\r\n[data-sb] .sb-flow i:nth-child(7) { animation-delay: calc(var(--sb-flow-dur) * -0.75) }\r\n[data-sb] .sb-flow i:nth-child(8) { animation-delay: calc(var(--sb-flow-dur) * -0.875) }\r\n[data-sb] .sb-flow i:nth-child(even) {\r\n  top: 10px;\r\n  width: 5px;\r\n  height: 5px;\r\n  background: var(--sb-accent2);\r\n  box-shadow: 0 0 9px rgba(var(--sb-glow), 0.95);\r\n}\r\n[data-sb] .sb-flow.idle i { background: #64748b; box-shadow: none }\r\n\r\n/* Factory mode: bits get pinched down and machined through a spinning gear. */\r\n[data-sb] .sb-flow.tool i {\r\n  background: #ffe066;\r\n  box-shadow: 0 0 10px rgba(255, 196, 0, 0.95);\r\n  animation-name: sb-flow-factory;\r\n}\r\n[data-sb] .sb-flow.tool i:nth-child(even) { background: #ffc400; box-shadow: 0 0 9px rgba(255, 196, 0, 0.9) }\r\n[data-sb] .sb-flow-gear {\r\n  position: absolute;\r\n  left: 50%;\r\n  top: 50%;\r\n  z-index: 2;\r\n  width: 12px;\r\n  height: 12px;\r\n  margin: -6px 0 0 -6px;\r\n  line-height: 12px;\r\n  text-align: center;\r\n  font-size: 11px;\r\n  color: #ffc400;\r\n  opacity: 0;\r\n  pointer-events: none;\r\n  text-shadow: 0 0 8px rgba(255, 196, 0, 0.9);\r\n  transition: opacity 0.18s ease;\r\n}\r\n[data-sb] .sb-flow.tool .sb-flow-gear { opacity: 1; animation: sb-spin 1.6s linear infinite }\r\n\r\n/* ------------------------------------------------------------- meters ---- */\r\n\r\n/* Cache hit rate as block glyphs: zero subpixel blur, monospace-safe. */\r\n[data-sb] .sb-blocks { display: inline-block; font-size: var(--sb-fs-meta); line-height: 1; letter-spacing: 1px; vertical-align: middle }\r\n[data-sb] .sb-blocks .on { color: inherit; text-shadow: 0 0 7px currentColor }\r\n[data-sb] .sb-blocks .off { opacity: 0.25 }\r\n[data-sb] .sb-num { font-variant-numeric: tabular-nums }\r\n\r\n[data-sb] .sb-flash { animation: sb-flash 0.9s ease-out 1 }\r\n[data-sb] .sb-bump {\r\n  position: absolute;\r\n  left: 100%;\r\n  top: -3px;\r\n  margin-left: 5px;\r\n  font-size: 10px;\r\n  font-weight: 700;\r\n  color: #00e676;\r\n  pointer-events: none;\r\n  white-space: nowrap;\r\n  animation: sb-bump 1.2s ease-out forwards;\r\n}\r\n[data-sb] .sb-loading { animation: sb-loading 1.3s ease-in-out infinite }\r\n\r\n/* ---------------------------------------------------------------- splash -- */\r\n\r\n/* Two crests enter from the ends, converge on the click, swell at contact,\r\n   then bounce home. --sb-x = meeting point in px, --sb-w = bar width in px.\r\n   Defaults keep the wave sane if a host forgets to measure. */\r\n[data-sb] .sb-splash { position: absolute; inset: 0; pointer-events: none; overflow: hidden; display: none; --sb-x: 50vw; --sb-w: 100vw }\r\n[data-sb] .sb-splash.go { display: block }\r\n[data-sb] .sb-splash i {\r\n  position: absolute;\r\n  left: var(--sb-sx, 13%);\r\n  top: 50%;\r\n  width: 200px;\r\n  height: 200px;\r\n  margin: -100px 0 0 -100px;\r\n  border-radius: 50%;\r\n  opacity: 0;\r\n  background: radial-gradient(circle, rgba(var(--sb-glow), 0.6) 0%, rgba(var(--sb-glow), 0.18) 45%, transparent 72%);\r\n}\r\n[data-sb] .sb-splash b,\r\n[data-sb] .sb-splash u {\r\n  position: absolute;\r\n  top: -40%;\r\n  width: 220px;\r\n  height: 180%;\r\n  margin-left: -110px;                        /* centres land exactly on the target */\r\n  border-radius: 50%;\r\n  opacity: 0;\r\n  background: radial-gradient(ellipse at center, rgba(var(--sb-glow), 0.5) 0%, rgba(var(--sb-glow), 0.16) 45%, transparent 72%);\r\n}\r\n[data-sb] .sb-splash b { left: 0 }            /* left crest travels right */\r\n[data-sb] .sb-splash u { left: 100% }         /* right crest travels left */\r\n[data-sb] .sb-splash.go i { animation: sb-impact 0.55s ease-out 0.4s forwards }\r\n[data-sb] .sb-splash.go b { animation: sb-wave-in-r 1.2s cubic-bezier(0.3, 0.6, 0.35, 1) forwards }\r\n[data-sb] .sb-splash.go u { animation: sb-wave-in-l 1.2s cubic-bezier(0.3, 0.6, 0.35, 1) forwards }\r\n\r\n/* Incoming-event flash: one-shot inset glow over the whole strip. */\r\n[data-sb] .sb-ping { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; animation: sb-ping 0.55s ease-out 1 }\r\n\r\n/* ---------------------------------------------------------- ocean / VT ---- */\r\n\r\n/* Whale is driving: flat wash + a single glint sweeping the top edge. */\r\n[data-sb][data-sb-ocean] {\r\n  background: var(--sb-wash);\r\n  border-top: 1px solid var(--sb-accent);\r\n  box-shadow: inset 0 0 30px rgba(var(--sb-glow), 0.14);\r\n}\r\n[data-sb][data-sb-ocean]::after {\r\n  content: \"\";\r\n  position: absolute;\r\n  left: 0;\r\n  right: 0;\r\n  top: 0;\r\n  height: 2px;\r\n  pointer-events: none;\r\n  opacity: 0.75;\r\n  background: linear-gradient(90deg, transparent 0%, rgba(var(--sb-glow), 0.75) 50%, transparent 100%);\r\n  background-size: 200% 100%;\r\n  animation: sb-wave 7s linear infinite;\r\n}\r\n[data-sb][data-sb-ocean] .sb-flow.idle i { background: #475569; box-shadow: none }\r\n\r\n/* Hover: lean in a touch; the card reveals the numbers the bar truncates. */\r\n[data-sb][data-sb-hover] { filter: brightness(1.08) }\r\n\r\n/* Scanline skin: faint CRT raster over everything, above the content. */\r\n[data-sb][data-sb-scan]::before {\r\n  content: \"\";\r\n  position: absolute;\r\n  inset: 0;\r\n  z-index: 1;\r\n  pointer-events: none;\r\n  opacity: 0.16;\r\n  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0 1px, transparent 1px 3px);\r\n}\r\n\r\n/* ---------------------------------------------------------------- card ---- */\r\n\r\n/* Anchored bottom-left of the bar. Never follows the pointer. 300px wide. */\r\n[data-sb] .sb-card {\r\n  position: absolute;\r\n  left: 12px;\r\n  bottom: calc(100% + 8px);\r\n  z-index: 50;\r\n  width: 300px;\r\n  max-width: calc(100vw - 28px);\r\n  padding: 8px 11px;\r\n  border-radius: 10px;\r\n  pointer-events: auto;\r\n  font-size: 11px;\r\n  line-height: 1.6;\r\n  background: #000000;\r\n  border: 1px solid rgba(var(--sb-glow), 0.22);\r\n  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.95);\r\n  animation: sb-card-in 0.16s ease-out 1;\r\n}\r\n[data-sb] .sb-card::after {\r\n  content: \"\";\r\n  position: absolute;\r\n  top: 100%;\r\n  left: 50%;\r\n  margin-left: -5px;\r\n  border: 5px solid transparent;\r\n  border-top-color: rgba(var(--sb-glow), 0.22);\r\n}\r\n[data-sb] .sb-card.pinned { border-color: rgba(var(--sb-glow), 0.45) }\r\n\r\n[data-sb] .sb-row { display: flex; justify-content: space-between; gap: 16px; white-space: nowrap }\r\n[data-sb] .sb-k { color: rgba(150, 170, 190, 0.9) }\r\n[data-sb] .sb-v { color: #ffffff; font-variant-numeric: tabular-nums }\r\n\r\n[data-sb] .sb-spark { display: block; width: 100%; height: 26px; margin-top: 5px }\r\n[data-sb] .sb-spark polyline {\r\n  fill: none;\r\n  stroke: var(--sb-accent);\r\n  stroke-width: 1.5;\r\n  stroke-linejoin: round;\r\n  stroke-linecap: round;\r\n  filter: drop-shadow(0 0 3px rgba(var(--sb-glow), 0.85));\r\n}\r\n[data-sb] .sb-spark-base { stroke: rgba(255, 255, 255, 0.1); stroke-width: 1 }\r\n\r\n[data-sb] .sb-palette {\r\n  display: flex;\r\n  align-items: center;\r\n  gap: 7px;\r\n  margin-top: 7px;\r\n  padding-top: 7px;\r\n  border-top: 1px solid rgba(255, 255, 255, 0.08);\r\n  pointer-events: auto;\r\n}\r\n[data-sb] .sb-swatch {\r\n  width: 13px;\r\n  height: 13px;\r\n  padding: 0;\r\n  border-radius: 50%;\r\n  border: 1px solid rgba(255, 255, 255, 0.28);\r\n  cursor: pointer;\r\n  transition: transform 0.12s ease, border-color 0.15s ease;\r\n}\r\n[data-sb] .sb-swatch:hover { transform: scale(1.18) }\r\n[data-sb] .sb-swatch.on { border: 2px solid #ffffff }\r\n\r\n[data-sb] .sb-tools { display: flex; align-items: center; gap: 5px; margin-top: 7px; pointer-events: auto }\r\n[data-sb] .sb-tool-k { font-size: 9.5px; letter-spacing: 0.6px; text-transform: uppercase; color: rgba(150, 170, 190, 0.85) }\r\n[data-sb] .sb-tool-v { min-width: 26px; text-align: center; font-size: 10px; color: #fff; font-variant-numeric: tabular-nums }\r\n[data-sb] .sb-mini {\r\n  width: 16px;\r\n  height: 16px;\r\n  padding: 0;\r\n  line-height: 1;\r\n  border-radius: 4px;\r\n  border: 1px solid rgba(255, 255, 255, 0.18);\r\n  background: transparent;\r\n  color: #cfd9e6;\r\n  font: inherit;\r\n  font-size: 11px;\r\n  cursor: pointer;\r\n}\r\n[data-sb] .sb-mini:hover { border-color: rgba(var(--sb-glow), 0.65); color: #fff }\r\n[data-sb] .sb-fx {\r\n  margin-left: auto;\r\n  padding: 2px 7px;\r\n  border-radius: 6px;\r\n  border: 1px solid rgba(255, 255, 255, 0.18);\r\n  background: transparent;\r\n  color: #cfd9e6;\r\n  font: inherit;\r\n  font-size: 9.5px;\r\n  letter-spacing: 0.5px;\r\n  text-transform: uppercase;\r\n  cursor: pointer;\r\n}\r\n[data-sb] .sb-fx:hover { border-color: rgba(var(--sb-glow), 0.65); color: #fff }\r\n\r\n/* ------------------------------------------------------------- lite mode -- */\r\n\r\n/* FX off. Kills every full-surface repaint, keeps small motion. State stays\r\n   identical — lite is a rendering budget, never a different information set. */\r\n[data-sb][data-sb-lite] { box-shadow: none !important; animation: none !important }\r\n[data-sb][data-sb-lite][data-sb-hover] { filter: none }\r\n[data-sb][data-sb-lite] .sb-ping { display: none }\r\n[data-sb][data-sb-lite] .sb-splash { display: none !important }\r\n[data-sb][data-sb-lite] .sb-spark polyline { filter: none }\r\n/* Freeze the breath but keep a static halo — lite must not mean dim text. */\r\n[data-sb][data-sb-lite] .sb-glow {\r\n  animation: none !important;\r\n  text-shadow: 0 0 8px rgba(var(--sb-glow), 0.6);\r\n}\r\n[data-sb][data-sb-lite] .sb-card,\r\n[data-sb][data-sb-lite] .sb-swatch { transition: none }\r\n\r\n/* ----------------------------------------------------------- keyframes --- */\r\n\r\n/* Asymmetric on purpose: inhale at 0–38%, short hold to 46%, slow exhale out.\r\n   A symmetric sine reads as a machine pulsing; this reads as breathing. */\r\n@keyframes sb-breathe {\r\n  0%   { box-shadow: inset 0 0 26px rgba(var(--sb-glow), 0.30), 0 0 12px rgba(var(--sb-glow), 0.12) }\r\n  38%  { box-shadow: inset 0 0 62px rgba(var(--sb-glow), 0.70), 0 0 26px rgba(var(--sb-glow), 0.35) }\r\n  46%  { box-shadow: inset 0 0 56px rgba(var(--sb-glow), 0.62), 0 0 23px rgba(var(--sb-glow), 0.31) }\r\n  100% { box-shadow: inset 0 0 26px rgba(var(--sb-glow), 0.30), 0 0 12px rgba(var(--sb-glow), 0.12) }\r\n}\r\n@keyframes sb-breathe-idle {\r\n  0%   { box-shadow: inset 0 0 20px rgba(var(--sb-glow), 0.14), 0 0 8px rgba(var(--sb-glow), 0.05) }\r\n  38%  { box-shadow: inset 0 0 46px rgba(var(--sb-glow), 0.38), 0 0 16px rgba(var(--sb-glow), 0.16) }\r\n  46%  { box-shadow: inset 0 0 41px rgba(var(--sb-glow), 0.33), 0 0 14px rgba(var(--sb-glow), 0.13) }\r\n  100% { box-shadow: inset 0 0 20px rgba(var(--sb-glow), 0.14), 0 0 8px rgba(var(--sb-glow), 0.05) }\r\n}\r\n@keyframes sb-glow {\r\n  0%   { text-shadow: 0 0 6px rgba(var(--sb-glow), 0.40) }\r\n  38%  { text-shadow: 0 0 14px rgba(var(--sb-glow), 0.95) }\r\n  46%  { text-shadow: 0 0 12px rgba(var(--sb-glow), 0.85) }\r\n  100% { text-shadow: 0 0 6px rgba(var(--sb-glow), 0.40) }\r\n}\r\n@keyframes sb-glow-soft {\r\n  0%   { text-shadow: 0 0 4px rgba(var(--sb-glow), 0.45) }\r\n  38%  { text-shadow: 0 0 9px rgba(var(--sb-glow), 0.85) }\r\n  46%  { text-shadow: 0 0 8px rgba(var(--sb-glow), 0.75) }\r\n  100% { text-shadow: 0 0 4px rgba(var(--sb-glow), 0.45) }\r\n}\r\n@keyframes sb-alert {\r\n  0%, 100% { text-shadow: 0 0 6px rgba(255, 23, 68, 0.35) }\r\n  50%      { text-shadow: 0 0 14px rgba(255, 23, 68, 0.95) }\r\n}\r\n@keyframes sb-dotfade { 0%, 100% { opacity: 0.2 } 50% { opacity: 1 } }\r\n@keyframes sb-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }\r\n@keyframes sb-zz {\r\n  0%   { opacity: 0; transform: translate(0, 2px) scale(0.7) }\r\n  28%  { opacity: 0.9 }\r\n  100% { opacity: 0; transform: translate(4px, -9px) scale(1.2) }\r\n}\r\n@keyframes sb-flow {\r\n  0%   { opacity: 0; transform: translateX(0) }\r\n  12%  { opacity: 1 }\r\n  88%  { opacity: 1 }\r\n  100% { opacity: 0; transform: translateX(128px) }\r\n}\r\n/* Pinch to 34% through the middle, where the gear sits. */\r\n@keyframes sb-flow-factory {\r\n  0%   { opacity: 0;    transform: translateX(0)   scale(0.7) }\r\n  12%  { opacity: 1;    transform: translateX(16px) scale(1) }\r\n  44%  { opacity: 0.55; transform: translateX(55px) scale(0.34) }\r\n  56%  { opacity: 0.55; transform: translateX(73px) scale(0.34) }\r\n  88%  { opacity: 1;    transform: translateX(112px) scale(1) }\r\n  100% { opacity: 0;    transform: translateX(128px) scale(0.7) }\r\n}\r\n@keyframes sb-wave { 0% { background-position: -160% 0 } 100% { background-position: 160% 0 } }\r\n@keyframes sb-ping {\r\n  0%   { box-shadow: inset 0 0 0 rgba(var(--sb-glow), 0); opacity: 1 }\r\n  20%  { box-shadow: inset 0 0 70px rgba(var(--sb-glow), 0.85) }\r\n  100% { box-shadow: inset 0 0 0 rgba(var(--sb-glow), 0); opacity: 0 }\r\n}\r\n@keyframes sb-impact {\r\n  0%   { transform: scale(0.2); opacity: 0 }\r\n  30%  { transform: scale(1.1); opacity: 1 }\r\n  100% { transform: scale(2.6); opacity: 0 }\r\n}\r\n/* 45% → 55% hold is the collision: they swell at contact instead of passing\r\n   through each other, then rebound. Don't collapse that hold. */\r\n@keyframes sb-wave-in-r {\r\n  0%   { transform: translateX(0) scaleX(0.55); opacity: 0 }\r\n  12%  { opacity: 0.9 }\r\n  45%  { transform: translateX(var(--sb-x)) scaleX(1.15); opacity: 1 }\r\n  55%  { transform: translateX(var(--sb-x)) scaleX(1.4); opacity: 1 }\r\n  100% { transform: translateX(0) scaleX(0.55); opacity: 0 }\r\n}\r\n@keyframes sb-wave-in-l {\r\n  0%   { transform: translateX(0) scaleX(0.55); opacity: 0 }\r\n  12%  { opacity: 0.9 }\r\n  45%  { transform: translateX(calc(var(--sb-x) - var(--sb-w))) scaleX(1.15); opacity: 1 }\r\n  55%  { transform: translateX(calc(var(--sb-x) - var(--sb-w))) scaleX(1.4); opacity: 1 }\r\n  100% { transform: translateX(0) scaleX(0.55); opacity: 0 }\r\n}\r\n@keyframes sb-flash {\r\n  0%   { filter: none }\r\n  25%  { filter: brightness(1.9) drop-shadow(0 0 6px currentColor) }\r\n  100% { filter: none }\r\n}\r\n@keyframes sb-bump {\r\n  0%   { opacity: 1; transform: translateY(0) }\r\n  60%  { opacity: 1; transform: translateY(-7px) }\r\n  100% { opacity: 0; transform: translateY(-12px) }\r\n}\r\n@keyframes sb-loading { 0%, 100% { opacity: 0.35 } 50% { opacity: 0.95 } }\r\n@keyframes sb-spin { to { transform: rotate(360deg) } }\r\n@keyframes sb-card-in { from { opacity: 0 } to { opacity: 1 } }\r\n\r\n/* ------------------------------------------------------------- palettes -- */\r\n\r\n/* 12 presets. Add one by copying four lines — every glow in the file follows. */\r\n\r\n[data-sb][data-sb-theme=\"cyan\"]      { --sb-accent:#00e5ff; --sb-accent2:#5ad8ff; --sb-glow:0,229,255;   --sb-wash:#04161b }\r\n[data-sb][data-sb-theme=\"green\"]     { --sb-accent:#00e676; --sb-accent2:#57e39a; --sb-glow:0,230,118;   --sb-wash:#04160c }\r\n[data-sb][data-sb-theme=\"matrix\"]    { --sb-accent:#00ff6a; --sb-accent2:#0aff9d; --sb-glow:0,255,106;   --sb-wash:#02120a }\r\n[data-sb][data-sb-theme=\"magenta\"]   { --sb-accent:#ff2d95; --sb-accent2:#ff7ab8; --sb-glow:255,45,149;  --sb-wash:#170510 }\r\n[data-sb][data-sb-theme=\"violet\"]    { --sb-accent:#b026ff; --sb-accent2:#c777ff; --sb-glow:176,38,255;  --sb-wash:#100518 }\r\n[data-sb][data-sb-theme=\"amber\"]     { --sb-accent:#ffb300; --sb-accent2:#ffcf66; --sb-glow:255,179,0;   --sb-wash:#150f03 }\r\n[data-sb][data-sb-theme=\"ice\"]       { --sb-accent:#8ad8ff; --sb-accent2:#c7ecff; --sb-glow:138,216,255; --sb-wash:#05111a }\r\n[data-sb][data-sb-theme=\"blood\"]     { --sb-accent:#ff1744; --sb-accent2:#ff6b86; --sb-glow:255,23,68;   --sb-wash:#150306 }\r\n[data-sb][data-sb-theme=\"cyberpunk\"] { --sb-accent:#fcee0a; --sb-accent2:#ff2d95; --sb-glow:252,238,10;  --sb-wash:#14120a }\r\n[data-sb][data-sb-theme=\"cyberwar\"]  { --sb-accent:#ff2b2b; --sb-accent2:#39ff14; --sb-glow:255,43,43;   --sb-wash:#140606 }\r\n[data-sb][data-sb-theme=\"superblack\"]{ --sb-accent:#ffffff; --sb-accent2:#9aa4b2; --sb-glow:255,255,255; --sb-wash:#000000 }\r\n[data-sb][data-sb-theme=\"deepseek\"]  { --sb-accent:#4d6bfe; --sb-accent2:#679efe; --sb-glow:77,107,254;  --sb-wash:#0b1226 }\r\n\r\n@media (prefers-reduced-motion: reduce) {\r\n  /* Host may also expose this as data-sb-lite. Both are wiring, not policy. */\r\n  [data-sb] { animation: none }\r\n}\r\n";
 
     /**
      * Scoped overrides. The strip now occupies a dock cell rather than adding a
@@ -363,6 +363,54 @@ window.__ModuleLoader__.load({
       '[data-composer-dock]>span:has(>button>svg[viewBox="0 0 14 14"])>button[aria-expanded="true"]{color:var(--dsh-sb-ctx-hover,var(--dsh-sb-ctx,var(--dsw-alias-label-secondary)))}' +
       '@media (prefers-reduced-motion:reduce){.dsh-sb-shell [data-sb]{animation:none!important}}' +
       '@media (max-width:740px){.dsh-sb-shell [data-sb] .sb-card.board{width:calc(100vw - 32px)}.dsh-sb-shell [data-sb] .sb-cols{grid-template-columns:1fr}}' +
+      /* ---- the model ribbon --------------------------------------------------
+         A header tag, so it is NOT scoped to `.dsh-sb-shell` - it renders in
+         the session title row, nowhere near the composer. It inherits the
+         header's own type and tint rather than painting its own dark surface:
+         a black chip in a themed header reads as an unloaded image.
+
+         Degradation is driven by the header's inline size, not the viewport:
+         the centre column, the open sidebar and the right panel all change how
+         much room the title row actually has, and the viewport does not say.
+         Three steps, widest first, so nothing ever has to hard-code a width. */
+      '.dsh-sb-ribbon{display:inline-flex;align-items:center;gap:5px;flex:0 1 auto;min-width:0;max-width:300px;height:22px;padding:0 8px;border:1px solid var(--dsw-alias-border-l2,rgba(128,136,152,.38));border-radius:var(--dsw-radius-xs,6px);background:var(--dsw-alias-fill-tsp-secondary,rgba(128,136,152,.12));font-size:12px;line-height:22px;color:var(--dsw-alias-label-secondary);white-space:nowrap;vertical-align:middle}' +
+      /* The tinted surface, where color-mix exists. The declarations above are
+         the host's own pill tokens, so the fallback is the shipped chrome
+         rather than an invented grey. */
+      '@supports (background:color-mix(in srgb,red 10%,transparent)){.dsh-sb-ribbon{border-color:color-mix(in srgb,var(--sb-rb-accent) 34%,var(--dsw-alias-border-l2,transparent));background:color-mix(in srgb,var(--sb-rb-accent) 12%,var(--dsw-alias-fill-tsp-secondary,transparent))}}' +
+      '.dsh-sb-ribbon .sb-mark{flex:0 0 auto;width:11px;height:11px;color:var(--sb-rb-accent)}' +
+      /* provider and model share one inline box, so the slash is tight against
+         the id it qualifies instead of picking up the row's 5px gap. */
+      '.dsh-sb-ribbon .sb-rb-id{display:inline-flex;align-items:baseline;min-width:0;overflow:hidden}' +
+      '.dsh-sb-ribbon .sb-rb-provider{flex:0 0 auto;color:var(--dsw-alias-label-tertiary);font-size:11px}' +
+      '.dsh-sb-ribbon .sb-rb-path{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary)}' +
+      /* The relabel seam. Amber, not red: a reseller route is unusual, not an
+         error, and it must not recolour with the palette - a warning that
+         follows the theme stops being a warning. */
+      '.dsh-sb-ribbon[data-sb-rb="relabel"]{border-color:rgba(255,196,0,.45);background:rgba(255,196,0,.10)}' +
+      '.dsh-sb-ribbon .sb-rb-warn{flex:0 0 auto;margin:0 1px;color:#ffc400;font-weight:700;font-size:11px}' +
+      '.dsh-sb-ribbon[data-sb-rb="relabel"] .sb-rb-provider{color:#ffc400}' +
+      '.dsh-sb-ribbon[data-sb-rb="relabel"] .sb-mark{color:#ffc400}' +
+      /* The tail is the part a reader is checking, so it is the last thing to
+         give way - and when even it cannot fit, it ellipsizes rather than being
+         sliced mid-glyph by the parent's clip. */
+      '.dsh-sb-ribbon .sb-rb-model{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:500;color:var(--dsw-alias-label-primary)}' +
+      '.dsh-sb-ribbon .sb-rb-sep{flex:0 0 auto;opacity:.4;margin:0 -1px}' +
+      /* The effort changes behaviour (same id, different budget), so it is a
+         token colour at a readable size rather than a dimmed 9.5px whisper. */
+      '.dsh-sb-ribbon .sb-rb-effort{flex:0 0 auto;font-size:10.5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--dsw-alias-label-tertiary)}' +
+      /* Provider goes first: `kilo/` in front of the id costs 5ch and says
+         nothing at this width. The namespace goes with it - keeping
+         `cmc-b/deepseek/` while it ellipsizes would spend the cap on path and
+         still leave the tail to be cut, which is the one outcome worth
+         avoiding. */
+      '@container (max-width: 720px){.dsh-sb-ribbon .sb-rb-path{display:none}.dsh-sb-ribbon{max-width:230px}}' +
+      /* Then the effort caption, leaving mark + route + id. */
+      '@container (max-width: 560px){.dsh-sb-ribbon .sb-rb-effort,.dsh-sb-ribbon .sb-rb-sep{display:none}.dsh-sb-ribbon{max-width:190px;padding:0 6px}}' +
+      /* At phone width the header has no room for a tag at all; the strip below
+         the composer still names the model, so this is the least lossy seat to
+         give up. */
+      '@container (max-width: 420px){.dsh-sb-ribbon{display:none}}' +
       /* ---- settings page ----------------------------------------------------
          Uses the host's own tokens so it belongs in Settings, and keeps the
          preview in the strip's own language. Nothing here is scoped to
@@ -557,6 +605,7 @@ window.__ModuleLoader__.load({
     const STORE_FLOATPOS = 'dsh.statusbar.floatpos';
     const STORE_WIDTH = 'dsh.statusbar.width';
     const STORE_HEIGHT = 'dsh.statusbar.height';
+    const STORE_RIBBON = 'dsh.statusbar.ribbon';
 
     /* Size steppers. The strip is capped at 980px by the shell so it lines up
        with the conversation column; `full` drops the cap for readers who want
@@ -981,16 +1030,22 @@ window.__ModuleLoader__.load({
        `modelSelection` is the durable projection the harness's own model
        selector reads: `{ next, lastUsed }`, each a `{ provider, model,
        reasoningEffort? }`. `next` is what the session will run, `lastUsed` what
-       it ran last, so the pair covers a blank session and a settled one. */
+       it ran last, so the pair covers a blank session and a settled one.
+
+       `settled` records which of the two answered. The strip ignores it - it
+       names the model either way - but a caller that wants to say "this is what
+       runs next" must not say it when the value actually came from `lastUsed`. */
     function readSelection(raw) {
       if (raw === null || typeof raw !== 'object') return null;
-      const candidate = raw.next || raw.lastUsed;
+      const pending = raw.next;
+      const candidate = pending || raw.lastUsed;
       if (candidate === null || typeof candidate !== 'object') return null;
       if (typeof candidate.model !== 'string' || candidate.model.length === 0) return null;
       return {
         provider: typeof candidate.provider === 'string' ? candidate.provider : '',
         model: candidate.model,
         effort: typeof candidate.reasoningEffort === 'string' ? candidate.reasoningEffort : '',
+        settled: !pending,
       };
     }
 
@@ -1148,6 +1203,218 @@ window.__ModuleLoader__.load({
           ),
         ),
       );
+    }
+
+    /* ------------------------------------------------------------------ *
+     * The model ribbon
+     *
+     * A read-only tag in the session header that names the model this session
+     * is actually running. The strip already carries the same figure, but the
+     * strip lives under the composer and truncates its id at 18ch, so the one
+     * place a reader looks to answer "what am I talking to?" is buried at the
+     * bottom of the window and cut off there.
+     *
+     * The seat is `conversation.session.header.utilities`: right-aligned, laid
+     * out with `flex:none` and no clipping, so the id ellipsizes inside the
+     * chip instead of being faded out by the title cluster's mask. Its nearest
+     * inline-size container is the session title row, so the three degradation
+     * steps below key on the width the header actually has - not the viewport,
+     * which says nothing about how much room the centre column ended up with.
+     *
+     * Reading the same `modelSelection` projection the harness's own selector
+     * reads means the ribbon cannot disagree with the control that sets it, and
+     * a host that does not publish the projection simply gets no ribbon rather
+     * than an empty chip.
+     * ------------------------------------------------------------------ */
+
+    /**
+     * Which family the *model id* names, looking at the id alone.
+     *
+     * `modelFamily` merges provider and model, which is right for picking
+     * artwork but useless for spotting a relabel: it would read the provider
+     * back out of the provider. This looks only at the id, so the two can be
+     * compared.
+     * @param model - model id as the route spells it.
+     * @returns the vendor the id names, or '' when it names no known one.
+     */
+    function modelVendor(model) {
+      const text = model.toLowerCase();
+      if (/deepseek/.test(text)) return 'deepseek';
+      if (/claude|anthropic/.test(text)) return 'claude';
+      if (/gpt|openai|^o[134]\b/.test(text)) return 'openai';
+      if (/gemini|google|gemma/.test(text)) return 'gemini';
+      if (/llama|meta/.test(text)) return 'llama';
+      if (/mistral|codestral/.test(text)) return 'mistral';
+      if (/qwen|tongyi/.test(text)) return 'qwen';
+      if (/kimi|moonshot/.test(text)) return 'moonshot';
+      if (/grok|xai/.test(text)) return 'grok';
+      return '';
+    }
+
+    /**
+     * Which families a route id stands for.
+     *
+     * A provider id is named after the company, not the model family, and the
+     * two rarely match: `anthropic` serves `claude`, `google` serves `gemini`,
+     * `xai` serves `grok`. Comparing the id's vendor word against the provider
+     * id alone would therefore flag every first-party route as a relabel.
+     */
+    const VENDOR_ROUTES = {
+      deepseek: ['deepseek'],
+      claude: ['anthropic', 'claude'],
+      openai: ['openai', 'azure'],
+      gemini: ['google', 'gemini', 'gemma'],
+      llama: ['meta', 'llama'],
+      mistral: ['mistral'],
+      qwen: ['qwen', 'tongyi', 'alibaba'],
+      moonshot: ['moonshot', 'kimi'],
+      grok: ['xai', 'grok'],
+    };
+
+    /**
+     * Whether the id names a vendor the route does not belong to.
+     *
+     * This is the honest answer to "my model is DeepSeek 4.1 but it answered
+     * as something else". A route is free to name a model anything; what the
+     * harness records is the *route* it called, and a reseller route serving a
+     * model called `deepseek-…` is a relabel, not a lie the client can prove
+     * beyond that. So the tag shows both and lets the reader see the seam,
+     * instead of repeating one of them as if it were the truth.
+     * @param selection - the live selection.
+     * @returns whether the id names a vendor absent from the route id.
+     */
+    function routeMismatch(selection) {
+      const vendor = modelVendor(selection.model);
+      if (vendor === '') return false;
+      const route = selection.provider.toLowerCase();
+      if (route === '') return false;
+      const aliases = VENDOR_ROUTES[vendor] || [vendor];
+      for (var i = 0; i < aliases.length; i += 1) {
+        if (route.indexOf(aliases[i]) >= 0) return false;
+      }
+      return true;
+    }
+    function themeDot(id) {
+      for (var i = 0; i < THEMES.length; i += 1) {
+        if (THEMES[i].id === id) return THEMES[i].dot;
+      }
+      return THEMES[0].dot;
+    }
+
+    /** The one preference that decides whether the ribbon is drawn at all. */
+    function readRibbon() {
+      return readStored(STORE_RIBBON, SHOW, [SHOW, HIDE]) === SHOW;
+    }
+
+    function ModelRibbon(props) {
+      const t = typeof props.t === 'function' ? props.t : (key) => key;
+
+      /* Same guarded door the strip uses: a projection that throws mid-teardown
+         costs this one figure, not the header. */
+      const projectionHook = (key) => {
+        try {
+          return typeof props.useProjection === 'function' ? props.useProjection(key) : undefined;
+        } catch (error) {
+          return undefined;
+        }
+      };
+      const selection = readSelection(useFaceValue(projectionHook, 'modelSelection'));
+
+      const [on, setOn] = React.useState(readRibbon);
+      const [theme, setTheme] = React.useState(() => readStored(STORE_THEME, 'deepseek', THEME_IDS));
+
+      /* The palette and the switch are written from Settings, in another tree.
+         One event means "re-read the known keys", so the open header follows a
+         click instead of waiting for a reload. */
+      React.useEffect(() => {
+        const sync = () => {
+          setOn(readRibbon());
+          setTheme(readStored(STORE_THEME, 'deepseek', THEME_IDS));
+        };
+        window.addEventListener(SETTINGS_EVENT, sync);
+        return () => {
+          window.removeEventListener(SETTINGS_EVENT, sync);
+        };
+      }, []);
+
+      /* No switch, no projection, no ribbon. An empty chip would be worse than
+         nothing: it reads as a model that failed to load. */
+      if (!on || selection === null) return null;
+
+      const modelTitle =
+        (selection.provider === '' ? selection.model : selection.provider + '/' + selection.model) +
+        (selection.effort === '' ? '' : ' \u00B7 ' + selection.effort);
+
+      /* Which of the two answers this chip is showing. `next` is a claim about
+         the future, so it is only made when `next` is what answered: after a
+         mid-session switch to a model this turn has not used, "runs" would be
+         a promise the session has not kept yet. */
+      const claim = selection.settled ? t('ribbon.title.last') : t('ribbon.title');
+
+      /* A namespaced id like `cmc-b/deepseek/deepseek-v4.1-flash` is mostly
+         path. Ellipsizing it from the end would keep the part a reader does
+         not need and cut the part they do, so the id is split at its last
+         slash: the namespace is a span the narrow step drops, and the tail is
+         what is left to ellipsize if even it overflows. */
+      const cut = selection.model.lastIndexOf('/');
+      const path = cut > 0 ? selection.model.slice(0, cut + 1) : '';
+      const tail = cut > 0 ? selection.model.slice(cut + 1) : selection.model;
+
+      /* The one thing this tag exists to make impossible to miss: the id names
+         a vendor the route does not belong to. A reseller may call a model
+         anything, and the harness only knows which route it called - so the two
+         are shown side by side with `≠` between them rather than one silently
+         standing in for the other. */
+      const relabel = routeMismatch(selection);
+      const vendor = relabel ? modelVendor(selection.model) : '';
+      const routeTitle = relabel
+        ? t('ribbon.relabel')
+            .replace('{route}', selection.provider)
+            .replace('{vendor}', vendor)
+            .replace('{model}', selection.model)
+        : claim + ': ' + modelTitle;
+
+      return h(
+        'span',
+        {
+          className: 'dsh-sb-ribbon',
+          'data-sb-rb': relabel ? 'relabel' : undefined,
+          style: { '--sb-rb-accent': themeDot(theme) },
+          /* `title`, not `aria-label`: this is a label, not a control, and its
+             text is already in the DOM. An aria-label on a plain span with no
+             role is dropped by most screen readers, so naming it there would
+             only be a comment to ourselves. */
+          title: routeTitle,
+        },
+        providerMark(modelFamily(selection)),
+        h(
+          'span',
+          { className: 'sb-rb-id' },
+          selection.provider === ''
+            ? null
+            : h('span', { className: 'sb-rb-provider' }, selection.provider + '/'),
+          /* The seam, in words rather than a colour: this is not that vendor. */
+          relabel ? h('span', { className: 'sb-rb-warn' }, '\u2260') : null,
+          path === '' ? null : h('span', { className: 'sb-rb-path' }, path),
+          h('span', { className: 'sb-rb-model' }, tail),
+        ),
+        /* A real separator element, not just the flex gap: adjacent spans carry
+           no whitespace between them, so a screen reader would run the id and
+           the effort together into "deepseek-v4.1-flashhigh". It is read aloud
+           (not aria-hidden) for exactly that reason, and it is the same `·` the
+           strip already uses as its separator everywhere. */
+        selection.effort === ''
+          ? null
+          : h('span', { className: 'sb-rb-sep' }, '\u00B7'),
+        selection.effort === ''
+          ? null
+          : h('span', { className: 'sb-rb-effort' }, selection.effort),
+      );
+    }
+
+    /** The header must never take the page down either. */
+    function ModelRibbonSafe(props) {
+      return h(Guard, { fallback: () => null }, h(ModelRibbon, props));
     }
 
     function StatusBar(props) {
@@ -2490,6 +2757,7 @@ window.__ModuleLoader__.load({
         float: modes.float,
         context: readStored(STORE_CONTEXT, HIDE, [SHOW, HIDE]),
         harness: readStored(STORE_HARNESS, SHOW, [SHOW, HIDE]),
+        ribbon: readStored(STORE_RIBBON, SHOW, [SHOW, HIDE]),
         phrases: readStored(STORE_PHRASES, ''),
         widthStep: readStoredIndex(STORE_WIDTH, WIDTH_DEFAULT, WIDTH_STEPS.length),
         heightStep: readStoredIndex(STORE_HEIGHT, HEIGHT_DEFAULT, HEIGHT_STEPS.length),
@@ -2737,6 +3005,15 @@ window.__ModuleLoader__.load({
             ),
           ),
           row(
+            t('settings.ribbon'),
+            h(
+              'span',
+              { className: 'sb-set-choices' },
+              choice(t('common.on'), prefs.ribbon === SHOW, () => put(STORE_RIBBON, SHOW), t('ribbon.title.show')),
+              choice(t('common.off'), prefs.ribbon === HIDE, () => put(STORE_RIBBON, HIDE), t('ribbon.title.hide')),
+            ),
+          ),
+          row(
             t('settings.context'),
             h(
               'span',
@@ -2811,6 +3088,7 @@ window.__ModuleLoader__.load({
                 writeStored(STORE_FLOAT, HIDE);
                 writeStored(STORE_CONTEXT, HIDE);
                 writeStored(STORE_HARNESS, SHOW);
+                writeStored(STORE_RIBBON, SHOW);
                 writeStored(STORE_FLOATPOS, 'null');
                 writeStored(STORE_PHRASES, '');
                 writeStored(STORE_WIDTH, String(WIDTH_DEFAULT));
@@ -2929,6 +3207,12 @@ window.__ModuleLoader__.load({
       'settings.phrases': 'phrases',
       'phrases.placeholder': 'one phrase per line, e.g. Cogitating / Jitterbugging',
       'settings.harness': 'harness bar',
+      'settings.ribbon': 'model ribbon',
+      'ribbon.title': 'model this session will run',
+      'ribbon.title.last': 'model this session last ran',
+      'ribbon.relabel': 'this route ({route}) is not {vendor}: the harness called a model it lists as {model}, but a reseller route names models itself, so the name is not proof of the vendor\'s weights',
+      'ribbon.title.show': "name the running model in the session header's right-hand utilities (hidden below ~420px of header width)",
+      'ribbon.title.hide': 'hide the model ribbon from the session header',
       'harness.title.show': "keep the harness's own context ring beside the strip",
       'harness.title.hide': "hide the harness's own context ring",
       'settings.context': 'context gauge',
@@ -3060,6 +3344,12 @@ window.__ModuleLoader__.load({
       'settings.phrases': '自定义短语',
       'phrases.placeholder': '每行一句，随意添加，例如：Cogitating / Jitterbugging',
       'settings.harness': 'Harness 状态栏',
+      'settings.ribbon': '模型铭牌',
+      'ribbon.title': '本会话接下来要用的模型',
+      'ribbon.title.last': '本会话上次使用的模型',
+      'ribbon.relabel': '这条路由（{route}）并非 {vendor}：Harness 调用的是它标注为 {model} 的模型，但转售路由可以自行命名模型，因此这个名字不能证明就是原厂的权重',
+      'ribbon.title.show': '在会话头部的右侧工具区显示当前运行的模型（头部宽度不足约 420px 时自动隐藏）',
+      'ribbon.title.hide': '隐藏会话头部里的模型铭牌',
       'harness.title.show': '保留 Harness 自带的上下文圆环',
       'harness.title.hide': '隐藏 Harness 自带的上下文圆环',
       'settings.context': '上下文仪表',
@@ -3131,6 +3421,26 @@ window.__ModuleLoader__.load({
           StatusBar,
         ),
       );
+
+      /* The header ribbon. Its own seat and its own lifetime - it must not
+         depend on the strip being docked or floating - and a `list` entry with
+         a fresh id, so the shipped utilities (the schedule catalog, the
+         overflow menu) keep their cells. order -10 is left of schedule's -5.
+
+         Registered after the strip and guarded: the ribbon is an addition, so a
+         host that does not publish that seat, or publishes a shape we misread,
+         must cost the ribbon alone. Losing the strip to it would be a worse
+         trade than never showing it. */
+      try {
+        ctx.slots.inject('conversation.session.header.utilities', () =>
+          ctx.slots.register(
+            { name: 'conversation.session.header.utilities', id: 'statusline-model', order: -10, locale: NS, label: 'Model' },
+            ModelRibbonSafe,
+          ),
+        );
+      } catch (error) {
+        /* No header utilities seat in this host: the strip still runs. */
+      }
 
       /* Settings > Plugins gets a page of its own. `label` is a function so the
          tab name is resolved when the tab is drawn, in the reader's language,

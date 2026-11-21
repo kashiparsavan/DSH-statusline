@@ -2,11 +2,15 @@
 
 A living status line for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), offered as one of two presentations: a bar docked under the composer (which replaces the harness's own pills line while it is on) or a floating card you can drag anywhere. One at a time, or none; choosing one switches the other off.
 
+It also puts a **model ribbon** in the session header that names the model being used — and flags the case where the model's name and the provider actually serving it disagree.
+
 ```
 ✻ ◇ deepseek-v4.1-flash · ✦ Flibbertigibbeting...  · •••••••• · 42 tok/s · ▣▣◧▢▢   ⚡99% ▰▰▰▰▰ · ↑1.4M / ↓18k · ⏱ 15m
 ✻ ◇ deepseek-v4.1-flash · ✦ Crunched for 4s        · •••••••• · 42 tok/s · ▣▣▣▢▢   ⚡99% ▰▰▰▰▰ · ↑1.4M / ↓18k · ⏱ 15m
 ✻ ◇ deepseek-v4.1-flash · ◌ in the ether Zzzz      · •••••••• · 42 tok/s           ⚡99% ▰▰▰▰▰ · ↑1.4M / ↓18k · ⏱ 15m
 ```
+
+**Jump to:** [Install](#install) · [The header ribbon](#the-header-ribbon) · [When the name and the route disagree](#when-the-name-and-the-route-disagree) · [Settings](#the-settings-page) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Configuration reference](docs/CONFIGURATION.md) · [Architecture](docs/ARCHITECTURE.md)
 
 The facts the shipped pills report — decode rate, cache-hit share, input/output split, wall time — rendered as a terminal strip that breathes at 16 bpm while working and 12 bpm while idle. The chip names the model that is actually running, with a family mark; the agent's own checklist appears beside the flow lane as one box per step. Billed totals and context occupancy stay in the hover card rather than competing with the harness's own context meter. A `demo` toggle in the card plays the whole working state on demand, so you can look at the motion without spending a prompt, and the card carries `w` / `h` steppers that resize the strip where you want it.
 
@@ -119,7 +123,7 @@ Every tool button in the card reads as **the state it is in**, and a latched tog
 | drag the floating card | moves it anywhere; double-click sends it back to the default seat |
 | `×` | closes the card, including a pinned one |
 
-Persisted choices: `localStorage["dsh.statusbar.theme"]`, `["dsh.statusbar.fx"]`, `["dsh.statusbar.pixel"]`, `["dsh.statusbar.flow"]`, `["dsh.statusbar.anchor"]`, `["dsh.statusbar.view"]`, `["dsh.statusbar.collapse"]`, `["dsh.statusbar.strip"]`, `["dsh.statusbar.float"]`, `["dsh.statusbar.floatpos"]`, `["dsh.statusbar.phrases"]`, `["dsh.statusbar.context"]`, `["dsh.statusbar.harness"]`, `["dsh.statusbar.width"]`, `["dsh.statusbar.height"]`.
+Persisted choices: `localStorage["dsh.statusbar.theme"]`, `["dsh.statusbar.fx"]`, `["dsh.statusbar.pixel"]`, `["dsh.statusbar.flow"]`, `["dsh.statusbar.anchor"]`, `["dsh.statusbar.view"]`, `["dsh.statusbar.collapse"]`, `["dsh.statusbar.strip"]`, `["dsh.statusbar.float"]`, `["dsh.statusbar.floatpos"]`, `["dsh.statusbar.phrases"]`, `["dsh.statusbar.context"]`, `["dsh.statusbar.harness"]`, `["dsh.statusbar.ribbon"]`, `["dsh.statusbar.width"]`, `["dsh.statusbar.height"]`.
 
 ## The settings page
 
@@ -141,6 +145,72 @@ The page is wrapped in the same error boundary as the strip: a broken settings p
 The chip names the model the session is actually running instead of the harness brand: a small family mark, the model id verbatim, and the reasoning effort when the adapter reports one. The harness ships no provider artwork, so the marks are original geometric hints keyed by family (`deepseek`, `claude`, `openai`, `gemini`, `llama`, `mistral`, `qwen`, `moonshot`, `grok`, and a plain tile for anything else) — a hint, not a vendor logo, and they inherit the accent colour so they follow the palette.
 
 The id is shown as the provider spells it (`deepseek-v4.1-flash`, not `DeepSeek V4.1 Flash`). Prettifying reads nicer and makes it harder to check against the model selector; the chip truncates past 18ch instead of pushing the metrics along. The full `provider/model · effort` is in the chip's tooltip, and clicking still opens the card.
+
+## The header ribbon
+
+The same figure also appears where the session itself is titled — a read-only tag in the header's right-hand utilities, left of the `⋯` menu:
+
+```text
+Install DSH-statusline on DeepSe…   ◆ kilo/gguf-Q4 · HIGH   ⋯
+Install DSH-statusline on DeepSe…   ◆ r10/≠deepseek-v4.1-flash   ⋯   ← relabelled route
+```
+
+| | |
+|---|---|
+| seat | `conversation.session.header.utilities`, fresh id `statusline-model`, `order: -10` |
+| reads | the same `modelSelection` projection the chip in the strip reads, `next ?? lastUsed` |
+| writes | nothing — the model seat in the composer owns selection, and a second control would promise a switch the header cannot make |
+| label | family mark in the active palette's accent, provider, model id verbatim, then `·` and the effort caption |
+| switch | **model ribbon** in Settings → Plugins; `localStorage["dsh.statusbar.ribbon"]` |
+
+This is a `list` seat, so nothing is shadowed: the shipped utilities keep their cells and a new id simply joins them. It is **not** scoped to `.dsh-sb-shell` — it renders in the title row, nowhere near the composer — so it inherits the header's own type and tint instead of painting a black strip into it. Its surface is the host's own `--dsw-alias-fill-tsp-secondary` chrome, tinted toward the palette accent with `color-mix()` where that is supported and left as the shipped pill tint where it is not.
+
+It is display-only on purpose. The composer's model seat already owns the click, and a header tag that opened the same menu would be a second, smaller copy of a control that is always visible two inches away; the tooltip carries the full `provider/model · effort` instead.
+
+That tooltip is the one place the two sources are kept apart. `next` is a statement about the future, so the tag only says *will run* when `next` is what answered: a session whose selection exists only as `lastUsed` — a resumed session whose default has since changed, or one switched mid-flight — is described as *last ran* instead. `readSelection` carries the distinction as `settled`, which the strip's own chip ignores because it is naming the model either way.
+
+### When the name and the route disagree
+
+This is the one thing the tag is built to make impossible to miss, and the reason it exists at all beyond convenience.
+
+A model id is a label the **route** chose. The harness records which provider endpoint it called and what that endpoint calls the model; it never learns which weights answered. So on a reseller route — an OpenAI-compatible gateway, a free-tier aggregator, a self-hosted proxy — an id like `deepseek-v4.1-flash` is a claim by the reseller, not a fact the client can verify. People meet this as "I was told I am on DeepSeek 4.1, but the model said it was something else", and there is no way to settle it from inside the client.
+
+What the tag can do is show both halves of the seam instead of repeating one as though it were the other. When the id names a vendor the provider route does not belong to, the ribbon:
+
+- marks itself `data-sb-rb="relabel"`,
+- turns the provider and the family mark amber,
+- prints `≠` between the route and the id — `r10/≠deepseek-v4.1-flash`,
+- and replaces the tooltip with a sentence naming the route, the vendor and the id.
+
+Amber rather than red on purpose: a reseller route is unusual, not an error, and the colour is a fixed literal rather than a palette variable — a warning that recolours with the theme stops being a warning.
+
+The comparison is deliberately conservative, because a false alarm here would train readers to ignore it:
+
+| | |
+|---|---|
+| vendor detection | looks at the **model id only** (`modelVendor`), never the provider — `modelFamily` merges both, which would read the provider back out of the provider and could never disagree |
+| route aliases | a provider id is named after the company, not the family: `anthropic` serves `claude`, `google` serves `gemini`, `xai` serves `grok`. Comparing against the vendor word alone would flag every first-party route, so `VENDOR_ROUTES` carries the aliases |
+| unknown vendors | an id that names no vendor the table knows (`nvidia/nemotron-…`, `kilo-auto/free`) is never flagged; silence is the correct answer when there is nothing to compare |
+| no route | a session with no recorded provider is never flagged |
+
+The honesty limit is worth stating plainly: this says *the id names a vendor this route is not*, which is checkable. It does **not** claim the weights are different, and it cannot — only the route knows that. Treat a relabel as a prompt to check the provider, not as proof of substitution.
+
+### Resizing
+
+The tag degrades on the header's own inline size, not the viewport — the centre column, an open sidebar and the right panel all decide how much room the title row actually has, and the window width says nothing about that. The title row is already an anonymous `container-type: inline-size` (the shipped preset label uses it the same way), so the three steps below need no second source of truth and no width written down:
+
+| container | ribbon |
+|---|---|
+| > 720px | mark · `provider/namespace/model` · effort |
+| ≤ 720px | provider and namespace drop together — `kilo/` in front of the id costs 5ch for nothing, and keeping `cmc-b/deepseek/` while it ellipsizes would spend the cap on path and still leave the tail cut |
+| ≤ 560px | the `·` and the effort caption drop, leaving mark + id |
+| ≤ 420px | the tag hides — the strip under the composer still names the model, and the title row is the least lossy thing to give up |
+
+Dropping the namespace rather than ellipsizing matters: a namespaced id is mostly path, so cutting it from the end would keep `cmc-b/deepseek/deepse…` and throw away the one part a reader recognises. The id is therefore split at its last `/`, and the tail is the last thing to give way — if even it cannot fit, it ellipsizes rather than being sliced mid-glyph by the parent's clip. A plain id has no prefix and behaves as it always did.
+
+The `·` between id and effort is a real element rather than the flex gap, because adjacent spans carry no whitespace: a screen reader would otherwise run the two together into `deepseek-v4.1-flashhigh`.
+
+The id ellipsizes inside the chip rather than growing the row, because the utilities are `flex:none` and sit outside the title cluster's fade mask: an overlong id would otherwise push the breadcrumb out of its own clip instead of being cut itself. Nothing here animates or takes focus — it is a label, so there is no motion to reduce and no control to ring.
 
 ## Step boxes
 
@@ -353,13 +423,13 @@ The script uses `JSON.stringify` for the splice. That detail matters: serializin
 From PowerShell (Windows PowerShell 5.1 included):
 
 ```powershell
-irm https://raw.githubusercontent.com/devopshelper/DSH-statusline/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/kashiparsavan/DSH-statusline/main/install.ps1 | iex
 ```
 
 From cmd.exe:
 
 ```bat
-powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/devopshelper/DSH-statusline/main/install.ps1 | iex"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/kashiparsavan/DSH-statusline/main/install.ps1 | iex"
 ```
 
 It finds the DSH profile, the CLI/runtime (even when `dsh` is not on PATH or Node is not installed), and a checkout: an existing linked checkout is reused, otherwise the repo is cloned into `%LOCALAPPDATA%\DSH\dsh-statusline` (or downloaded as a zip when Git is missing). It then links the package into the profile and registers it in `dsh.profile.bundles`, which is the step that activates it. Re-running the same command pulls the checkout and relinks, so one command both installs and updates.
@@ -403,7 +473,7 @@ The first installs, the second only repairs the activation entry.
 Run the same one-liner:
 
 ```powershell
-irm https://raw.githubusercontent.com/devopshelper/DSH-statusline/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/kashiparsavan/DSH-statusline/main/install.ps1 | iex
 ```
 
 From a checkout, `.\update.cmd` (or `.\install.ps1 -Update`) does the same: `git pull --ff-only`, then `dsh plugin remove` + `add` so DSH builds a new module generation, then re-registers the bundle. Reload with Ctrl+Shift+R; restart if the old strip is still on screen.
@@ -461,3 +531,21 @@ icon.svg             original artwork
 - The provider marks are hand-drawn geometry, not vendor logos: the harness ships no provider artwork, and shipping someone's logo in a status bar is a licensing question a strip should not answer. If a mark is wrong for your provider, the family table in `client.src.js` is the one place to fix it.
 - The width stepper stops at 900px rather than shrinking further. The row is `nowrap` and the status slot is a fixed 27ch by design, so a narrower strip would spill its own contents rather than reflow.
 - Visual verification is per-screenshot; there is no browser automation in this setup.
+- The ribbon's relabel warning reports a disagreement between two recorded strings — the model id and the provider route. It is **not** evidence that different weights answered. See [When the name and the route disagree](#when-the-name-and-the-route-disagree).
+
+## Documentation
+
+| | |
+|---|---|
+| [INSTALL.md](docs/INSTALL.md) | every install path, what the installer changes, how to undo it |
+| [CONFIGURATION.md](docs/CONFIGURATION.md) | every `localStorage` key, palettes, size steps |
+| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | symptom-first: nothing appears, ribbon missing, ≠ shown, choppy motion |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | module format, the two seats, data, error containment, load-bearing rules |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | setup, rebuild, conventions, what gets declined |
+| [CHANGELOG.md](CHANGELOG.md) | what changed and why |
+| [NOTICE.md](NOTICE.md) | provenance, licensing (read this before redistributing) |
+
+## Credits
+
+The fork base and the majority of this plugin are the work of [devopshelper](https://github.com/devopshelper/DSH-statusline); the fork preserves that history. The model ribbon, the relabel warning and the documentation set were added on top. See [NOTICE.md](NOTICE.md) for the licensing position, which is worth understanding before you reuse anything here.
+

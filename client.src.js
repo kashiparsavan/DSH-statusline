@@ -363,6 +363,54 @@ window.__ModuleLoader__.load({
       '[data-composer-dock]>span:has(>button>svg[viewBox="0 0 14 14"])>button[aria-expanded="true"]{color:var(--dsh-sb-ctx-hover,var(--dsh-sb-ctx,var(--dsw-alias-label-secondary)))}' +
       '@media (prefers-reduced-motion:reduce){.dsh-sb-shell [data-sb]{animation:none!important}}' +
       '@media (max-width:740px){.dsh-sb-shell [data-sb] .sb-card.board{width:calc(100vw - 32px)}.dsh-sb-shell [data-sb] .sb-cols{grid-template-columns:1fr}}' +
+      /* ---- the model ribbon --------------------------------------------------
+         A header tag, so it is NOT scoped to `.dsh-sb-shell` - it renders in
+         the session title row, nowhere near the composer. It inherits the
+         header's own type and tint rather than painting its own dark surface:
+         a black chip in a themed header reads as an unloaded image.
+
+         Degradation is driven by the header's inline size, not the viewport:
+         the centre column, the open sidebar and the right panel all change how
+         much room the title row actually has, and the viewport does not say.
+         Three steps, widest first, so nothing ever has to hard-code a width. */
+      '.dsh-sb-ribbon{display:inline-flex;align-items:center;gap:5px;flex:0 1 auto;min-width:0;max-width:300px;height:22px;padding:0 8px;border:1px solid var(--dsw-alias-border-l2,rgba(128,136,152,.38));border-radius:var(--dsw-radius-xs,6px);background:var(--dsw-alias-fill-tsp-secondary,rgba(128,136,152,.12));font-size:12px;line-height:22px;color:var(--dsw-alias-label-secondary);white-space:nowrap;vertical-align:middle}' +
+      /* The tinted surface, where color-mix exists. The declarations above are
+         the host's own pill tokens, so the fallback is the shipped chrome
+         rather than an invented grey. */
+      '@supports (background:color-mix(in srgb,red 10%,transparent)){.dsh-sb-ribbon{border-color:color-mix(in srgb,var(--sb-rb-accent) 34%,var(--dsw-alias-border-l2,transparent));background:color-mix(in srgb,var(--sb-rb-accent) 12%,var(--dsw-alias-fill-tsp-secondary,transparent))}}' +
+      '.dsh-sb-ribbon .sb-mark{flex:0 0 auto;width:11px;height:11px;color:var(--sb-rb-accent)}' +
+      /* provider and model share one inline box, so the slash is tight against
+         the id it qualifies instead of picking up the row's 5px gap. */
+      '.dsh-sb-ribbon .sb-rb-id{display:inline-flex;align-items:baseline;min-width:0;overflow:hidden}' +
+      '.dsh-sb-ribbon .sb-rb-provider{flex:0 0 auto;color:var(--dsw-alias-label-tertiary);font-size:11px}' +
+      '.dsh-sb-ribbon .sb-rb-path{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary)}' +
+      /* The relabel seam. Amber, not red: a reseller route is unusual, not an
+         error, and it must not recolour with the palette - a warning that
+         follows the theme stops being a warning. */
+      '.dsh-sb-ribbon[data-sb-rb="relabel"]{border-color:rgba(255,196,0,.45);background:rgba(255,196,0,.10)}' +
+      '.dsh-sb-ribbon .sb-rb-warn{flex:0 0 auto;margin:0 1px;color:#ffc400;font-weight:700;font-size:11px}' +
+      '.dsh-sb-ribbon[data-sb-rb="relabel"] .sb-rb-provider{color:#ffc400}' +
+      '.dsh-sb-ribbon[data-sb-rb="relabel"] .sb-mark{color:#ffc400}' +
+      /* The tail is the part a reader is checking, so it is the last thing to
+         give way - and when even it cannot fit, it ellipsizes rather than being
+         sliced mid-glyph by the parent's clip. */
+      '.dsh-sb-ribbon .sb-rb-model{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:500;color:var(--dsw-alias-label-primary)}' +
+      '.dsh-sb-ribbon .sb-rb-sep{flex:0 0 auto;opacity:.4;margin:0 -1px}' +
+      /* The effort changes behaviour (same id, different budget), so it is a
+         token colour at a readable size rather than a dimmed 9.5px whisper. */
+      '.dsh-sb-ribbon .sb-rb-effort{flex:0 0 auto;font-size:10.5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--dsw-alias-label-tertiary)}' +
+      /* Provider goes first: `kilo/` in front of the id costs 5ch and says
+         nothing at this width. The namespace goes with it - keeping
+         `cmc-b/deepseek/` while it ellipsizes would spend the cap on path and
+         still leave the tail to be cut, which is the one outcome worth
+         avoiding. */
+      '@container (max-width: 720px){.dsh-sb-ribbon .sb-rb-path{display:none}.dsh-sb-ribbon{max-width:230px}}' +
+      /* Then the effort caption, leaving mark + route + id. */
+      '@container (max-width: 560px){.dsh-sb-ribbon .sb-rb-effort,.dsh-sb-ribbon .sb-rb-sep{display:none}.dsh-sb-ribbon{max-width:190px;padding:0 6px}}' +
+      /* At phone width the header has no room for a tag at all; the strip below
+         the composer still names the model, so this is the least lossy seat to
+         give up. */
+      '@container (max-width: 420px){.dsh-sb-ribbon{display:none}}' +
       /* ---- settings page ----------------------------------------------------
          Uses the host's own tokens so it belongs in Settings, and keeps the
          preview in the strip's own language. Nothing here is scoped to
@@ -557,6 +605,7 @@ window.__ModuleLoader__.load({
     const STORE_FLOATPOS = 'dsh.statusbar.floatpos';
     const STORE_WIDTH = 'dsh.statusbar.width';
     const STORE_HEIGHT = 'dsh.statusbar.height';
+    const STORE_RIBBON = 'dsh.statusbar.ribbon';
 
     /* Size steppers. The strip is capped at 980px by the shell so it lines up
        with the conversation column; `full` drops the cap for readers who want
@@ -981,16 +1030,22 @@ window.__ModuleLoader__.load({
        `modelSelection` is the durable projection the harness's own model
        selector reads: `{ next, lastUsed }`, each a `{ provider, model,
        reasoningEffort? }`. `next` is what the session will run, `lastUsed` what
-       it ran last, so the pair covers a blank session and a settled one. */
+       it ran last, so the pair covers a blank session and a settled one.
+
+       `settled` records which of the two answered. The strip ignores it - it
+       names the model either way - but a caller that wants to say "this is what
+       runs next" must not say it when the value actually came from `lastUsed`. */
     function readSelection(raw) {
       if (raw === null || typeof raw !== 'object') return null;
-      const candidate = raw.next || raw.lastUsed;
+      const pending = raw.next;
+      const candidate = pending || raw.lastUsed;
       if (candidate === null || typeof candidate !== 'object') return null;
       if (typeof candidate.model !== 'string' || candidate.model.length === 0) return null;
       return {
         provider: typeof candidate.provider === 'string' ? candidate.provider : '',
         model: candidate.model,
         effort: typeof candidate.reasoningEffort === 'string' ? candidate.reasoningEffort : '',
+        settled: !pending,
       };
     }
 
@@ -1148,6 +1203,218 @@ window.__ModuleLoader__.load({
           ),
         ),
       );
+    }
+
+    /* ------------------------------------------------------------------ *
+     * The model ribbon
+     *
+     * A read-only tag in the session header that names the model this session
+     * is actually running. The strip already carries the same figure, but the
+     * strip lives under the composer and truncates its id at 18ch, so the one
+     * place a reader looks to answer "what am I talking to?" is buried at the
+     * bottom of the window and cut off there.
+     *
+     * The seat is `conversation.session.header.utilities`: right-aligned, laid
+     * out with `flex:none` and no clipping, so the id ellipsizes inside the
+     * chip instead of being faded out by the title cluster's mask. Its nearest
+     * inline-size container is the session title row, so the three degradation
+     * steps below key on the width the header actually has - not the viewport,
+     * which says nothing about how much room the centre column ended up with.
+     *
+     * Reading the same `modelSelection` projection the harness's own selector
+     * reads means the ribbon cannot disagree with the control that sets it, and
+     * a host that does not publish the projection simply gets no ribbon rather
+     * than an empty chip.
+     * ------------------------------------------------------------------ */
+
+    /**
+     * Which family the *model id* names, looking at the id alone.
+     *
+     * `modelFamily` merges provider and model, which is right for picking
+     * artwork but useless for spotting a relabel: it would read the provider
+     * back out of the provider. This looks only at the id, so the two can be
+     * compared.
+     * @param model - model id as the route spells it.
+     * @returns the vendor the id names, or '' when it names no known one.
+     */
+    function modelVendor(model) {
+      const text = model.toLowerCase();
+      if (/deepseek/.test(text)) return 'deepseek';
+      if (/claude|anthropic/.test(text)) return 'claude';
+      if (/gpt|openai|^o[134]\b/.test(text)) return 'openai';
+      if (/gemini|google|gemma/.test(text)) return 'gemini';
+      if (/llama|meta/.test(text)) return 'llama';
+      if (/mistral|codestral/.test(text)) return 'mistral';
+      if (/qwen|tongyi/.test(text)) return 'qwen';
+      if (/kimi|moonshot/.test(text)) return 'moonshot';
+      if (/grok|xai/.test(text)) return 'grok';
+      return '';
+    }
+
+    /**
+     * Which families a route id stands for.
+     *
+     * A provider id is named after the company, not the model family, and the
+     * two rarely match: `anthropic` serves `claude`, `google` serves `gemini`,
+     * `xai` serves `grok`. Comparing the id's vendor word against the provider
+     * id alone would therefore flag every first-party route as a relabel.
+     */
+    const VENDOR_ROUTES = {
+      deepseek: ['deepseek'],
+      claude: ['anthropic', 'claude'],
+      openai: ['openai', 'azure'],
+      gemini: ['google', 'gemini', 'gemma'],
+      llama: ['meta', 'llama'],
+      mistral: ['mistral'],
+      qwen: ['qwen', 'tongyi', 'alibaba'],
+      moonshot: ['moonshot', 'kimi'],
+      grok: ['xai', 'grok'],
+    };
+
+    /**
+     * Whether the id names a vendor the route does not belong to.
+     *
+     * This is the honest answer to "my model is DeepSeek 4.1 but it answered
+     * as something else". A route is free to name a model anything; what the
+     * harness records is the *route* it called, and a reseller route serving a
+     * model called `deepseek-…` is a relabel, not a lie the client can prove
+     * beyond that. So the tag shows both and lets the reader see the seam,
+     * instead of repeating one of them as if it were the truth.
+     * @param selection - the live selection.
+     * @returns whether the id names a vendor absent from the route id.
+     */
+    function routeMismatch(selection) {
+      const vendor = modelVendor(selection.model);
+      if (vendor === '') return false;
+      const route = selection.provider.toLowerCase();
+      if (route === '') return false;
+      const aliases = VENDOR_ROUTES[vendor] || [vendor];
+      for (var i = 0; i < aliases.length; i += 1) {
+        if (route.indexOf(aliases[i]) >= 0) return false;
+      }
+      return true;
+    }
+    function themeDot(id) {
+      for (var i = 0; i < THEMES.length; i += 1) {
+        if (THEMES[i].id === id) return THEMES[i].dot;
+      }
+      return THEMES[0].dot;
+    }
+
+    /** The one preference that decides whether the ribbon is drawn at all. */
+    function readRibbon() {
+      return readStored(STORE_RIBBON, SHOW, [SHOW, HIDE]) === SHOW;
+    }
+
+    function ModelRibbon(props) {
+      const t = typeof props.t === 'function' ? props.t : (key) => key;
+
+      /* Same guarded door the strip uses: a projection that throws mid-teardown
+         costs this one figure, not the header. */
+      const projectionHook = (key) => {
+        try {
+          return typeof props.useProjection === 'function' ? props.useProjection(key) : undefined;
+        } catch (error) {
+          return undefined;
+        }
+      };
+      const selection = readSelection(useFaceValue(projectionHook, 'modelSelection'));
+
+      const [on, setOn] = React.useState(readRibbon);
+      const [theme, setTheme] = React.useState(() => readStored(STORE_THEME, 'deepseek', THEME_IDS));
+
+      /* The palette and the switch are written from Settings, in another tree.
+         One event means "re-read the known keys", so the open header follows a
+         click instead of waiting for a reload. */
+      React.useEffect(() => {
+        const sync = () => {
+          setOn(readRibbon());
+          setTheme(readStored(STORE_THEME, 'deepseek', THEME_IDS));
+        };
+        window.addEventListener(SETTINGS_EVENT, sync);
+        return () => {
+          window.removeEventListener(SETTINGS_EVENT, sync);
+        };
+      }, []);
+
+      /* No switch, no projection, no ribbon. An empty chip would be worse than
+         nothing: it reads as a model that failed to load. */
+      if (!on || selection === null) return null;
+
+      const modelTitle =
+        (selection.provider === '' ? selection.model : selection.provider + '/' + selection.model) +
+        (selection.effort === '' ? '' : ' \u00B7 ' + selection.effort);
+
+      /* Which of the two answers this chip is showing. `next` is a claim about
+         the future, so it is only made when `next` is what answered: after a
+         mid-session switch to a model this turn has not used, "runs" would be
+         a promise the session has not kept yet. */
+      const claim = selection.settled ? t('ribbon.title.last') : t('ribbon.title');
+
+      /* A namespaced id like `cmc-b/deepseek/deepseek-v4.1-flash` is mostly
+         path. Ellipsizing it from the end would keep the part a reader does
+         not need and cut the part they do, so the id is split at its last
+         slash: the namespace is a span the narrow step drops, and the tail is
+         what is left to ellipsize if even it overflows. */
+      const cut = selection.model.lastIndexOf('/');
+      const path = cut > 0 ? selection.model.slice(0, cut + 1) : '';
+      const tail = cut > 0 ? selection.model.slice(cut + 1) : selection.model;
+
+      /* The one thing this tag exists to make impossible to miss: the id names
+         a vendor the route does not belong to. A reseller may call a model
+         anything, and the harness only knows which route it called - so the two
+         are shown side by side with `≠` between them rather than one silently
+         standing in for the other. */
+      const relabel = routeMismatch(selection);
+      const vendor = relabel ? modelVendor(selection.model) : '';
+      const routeTitle = relabel
+        ? t('ribbon.relabel')
+            .replace('{route}', selection.provider)
+            .replace('{vendor}', vendor)
+            .replace('{model}', selection.model)
+        : claim + ': ' + modelTitle;
+
+      return h(
+        'span',
+        {
+          className: 'dsh-sb-ribbon',
+          'data-sb-rb': relabel ? 'relabel' : undefined,
+          style: { '--sb-rb-accent': themeDot(theme) },
+          /* `title`, not `aria-label`: this is a label, not a control, and its
+             text is already in the DOM. An aria-label on a plain span with no
+             role is dropped by most screen readers, so naming it there would
+             only be a comment to ourselves. */
+          title: routeTitle,
+        },
+        providerMark(modelFamily(selection)),
+        h(
+          'span',
+          { className: 'sb-rb-id' },
+          selection.provider === ''
+            ? null
+            : h('span', { className: 'sb-rb-provider' }, selection.provider + '/'),
+          /* The seam, in words rather than a colour: this is not that vendor. */
+          relabel ? h('span', { className: 'sb-rb-warn' }, '\u2260') : null,
+          path === '' ? null : h('span', { className: 'sb-rb-path' }, path),
+          h('span', { className: 'sb-rb-model' }, tail),
+        ),
+        /* A real separator element, not just the flex gap: adjacent spans carry
+           no whitespace between them, so a screen reader would run the id and
+           the effort together into "deepseek-v4.1-flashhigh". It is read aloud
+           (not aria-hidden) for exactly that reason, and it is the same `·` the
+           strip already uses as its separator everywhere. */
+        selection.effort === ''
+          ? null
+          : h('span', { className: 'sb-rb-sep' }, '\u00B7'),
+        selection.effort === ''
+          ? null
+          : h('span', { className: 'sb-rb-effort' }, selection.effort),
+      );
+    }
+
+    /** The header must never take the page down either. */
+    function ModelRibbonSafe(props) {
+      return h(Guard, { fallback: () => null }, h(ModelRibbon, props));
     }
 
     function StatusBar(props) {
@@ -2490,6 +2757,7 @@ window.__ModuleLoader__.load({
         float: modes.float,
         context: readStored(STORE_CONTEXT, HIDE, [SHOW, HIDE]),
         harness: readStored(STORE_HARNESS, SHOW, [SHOW, HIDE]),
+        ribbon: readStored(STORE_RIBBON, SHOW, [SHOW, HIDE]),
         phrases: readStored(STORE_PHRASES, ''),
         widthStep: readStoredIndex(STORE_WIDTH, WIDTH_DEFAULT, WIDTH_STEPS.length),
         heightStep: readStoredIndex(STORE_HEIGHT, HEIGHT_DEFAULT, HEIGHT_STEPS.length),
@@ -2737,6 +3005,15 @@ window.__ModuleLoader__.load({
             ),
           ),
           row(
+            t('settings.ribbon'),
+            h(
+              'span',
+              { className: 'sb-set-choices' },
+              choice(t('common.on'), prefs.ribbon === SHOW, () => put(STORE_RIBBON, SHOW), t('ribbon.title.show')),
+              choice(t('common.off'), prefs.ribbon === HIDE, () => put(STORE_RIBBON, HIDE), t('ribbon.title.hide')),
+            ),
+          ),
+          row(
             t('settings.context'),
             h(
               'span',
@@ -2811,6 +3088,7 @@ window.__ModuleLoader__.load({
                 writeStored(STORE_FLOAT, HIDE);
                 writeStored(STORE_CONTEXT, HIDE);
                 writeStored(STORE_HARNESS, SHOW);
+                writeStored(STORE_RIBBON, SHOW);
                 writeStored(STORE_FLOATPOS, 'null');
                 writeStored(STORE_PHRASES, '');
                 writeStored(STORE_WIDTH, String(WIDTH_DEFAULT));
@@ -2929,6 +3207,12 @@ window.__ModuleLoader__.load({
       'settings.phrases': 'phrases',
       'phrases.placeholder': 'one phrase per line, e.g. Cogitating / Jitterbugging',
       'settings.harness': 'harness bar',
+      'settings.ribbon': 'model ribbon',
+      'ribbon.title': 'model this session will run',
+      'ribbon.title.last': 'model this session last ran',
+      'ribbon.relabel': 'this route ({route}) is not {vendor}: the harness called a model it lists as {model}, but a reseller route names models itself, so the name is not proof of the vendor\'s weights',
+      'ribbon.title.show': "name the running model in the session header's right-hand utilities (hidden below ~420px of header width)",
+      'ribbon.title.hide': 'hide the model ribbon from the session header',
       'harness.title.show': "keep the harness's own context ring beside the strip",
       'harness.title.hide': "hide the harness's own context ring",
       'settings.context': 'context gauge',
@@ -3060,6 +3344,12 @@ window.__ModuleLoader__.load({
       'settings.phrases': '自定义短语',
       'phrases.placeholder': '每行一句，随意添加，例如：Cogitating / Jitterbugging',
       'settings.harness': 'Harness 状态栏',
+      'settings.ribbon': '模型铭牌',
+      'ribbon.title': '本会话接下来要用的模型',
+      'ribbon.title.last': '本会话上次使用的模型',
+      'ribbon.relabel': '这条路由（{route}）并非 {vendor}：Harness 调用的是它标注为 {model} 的模型，但转售路由可以自行命名模型，因此这个名字不能证明就是原厂的权重',
+      'ribbon.title.show': '在会话头部的右侧工具区显示当前运行的模型（头部宽度不足约 420px 时自动隐藏）',
+      'ribbon.title.hide': '隐藏会话头部里的模型铭牌',
       'harness.title.show': '保留 Harness 自带的上下文圆环',
       'harness.title.hide': '隐藏 Harness 自带的上下文圆环',
       'settings.context': '上下文仪表',
@@ -3131,6 +3421,26 @@ window.__ModuleLoader__.load({
           StatusBar,
         ),
       );
+
+      /* The header ribbon. Its own seat and its own lifetime - it must not
+         depend on the strip being docked or floating - and a `list` entry with
+         a fresh id, so the shipped utilities (the schedule catalog, the
+         overflow menu) keep their cells. order -10 is left of schedule's -5.
+
+         Registered after the strip and guarded: the ribbon is an addition, so a
+         host that does not publish that seat, or publishes a shape we misread,
+         must cost the ribbon alone. Losing the strip to it would be a worse
+         trade than never showing it. */
+      try {
+        ctx.slots.inject('conversation.session.header.utilities', () =>
+          ctx.slots.register(
+            { name: 'conversation.session.header.utilities', id: 'statusline-model', order: -10, locale: NS, label: 'Model' },
+            ModelRibbonSafe,
+          ),
+        );
+      } catch (error) {
+        /* No header utilities seat in this host: the strip still runs. */
+      }
 
       /* Settings > Plugins gets a page of its own. `label` is a function so the
          tab name is resolved when the tab is drawn, in the reader's language,
