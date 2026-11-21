@@ -1,4 +1,4 @@
-﻿# Troubleshooting
+# Troubleshooting
 
 Symptom first. Each entry says what to check, then what to run.
 
@@ -95,16 +95,19 @@ What it means: *the name is the route's claim, not proof of origin.* Check the p
 
 What it does **not** mean: that the weights are substituted. The client cannot know that. A relabel is a prompt to check, not proof.
 
+If almost every model shows the warning, that is not a malfunction — it means the provider you are configured against is an aggregator or reseller rather than a vendor's own endpoint. Every model it offers is then somebody else's name.
+
 To confirm the classifier agrees with your config, look at the provider id and the model id:
 
 ```js
-modelVendor('deepseek-v4.1-flash')                                    // 'deepseek'
-routeMismatch({ provider: 'r10',          model: 'deepseek-v4.1-flash' })  // true  → ≠ shown
-routeMismatch({ provider: 'deepseek',     model: 'deepseek-v4.1-flash' })  // false → quiet
-routeMismatch({ provider: 'openrouter',   model: 'nvidia/nemotron-…'   })  // false → no known vendor, quiet
+modelVendor('deepseek-v4.1-flash')                                        // 'deepseek'
+routeMismatch({ provider: 'r10',        model: 'deepseek-v4.1-flash' })    // true  → ≠ shown
+routeMismatch({ provider: 'deepseek',   model: 'deepseek-v4.1-flash' })    // false → quiet
+routeMismatch({ provider: 'anthropic',  model: 'claude-sonnet-4-5'  })     // false → quiet
+routeMismatch({ provider: 'kilo-gateway', model: 'kilo-auto/free'   })     // false → no known vendor, quiet
 ```
 
-If you see a relabel you believe is wrong, the alias table `VENDOR_ROUTES` in `client.src.js` is the one place to fix it — a provider named after a company rather than a model family needs its alias added (`google` for `gemini`, `xai` for `grok`, …).
+If you see a relabel you believe is wrong, the alias table `VENDOR_ROUTES` in `client.src.js` is the one place to fix it — a provider named after a company rather than a model family needs its alias added (`google` for `gemini`, `xai` for `grok`, `meta` for `llama`, `alibaba` for `qwen`).
 
 ## The strip jumps or reflows
 

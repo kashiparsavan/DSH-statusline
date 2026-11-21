@@ -1248,6 +1248,10 @@ window.__ModuleLoader__.load({
       if (/qwen|tongyi/.test(text)) return 'qwen';
       if (/kimi|moonshot/.test(text)) return 'moonshot';
       if (/grok|xai/.test(text)) return 'grok';
+      if (/nemotron|nvidia/.test(text)) return 'nvidia';
+      if (/cohere|command-r/.test(text)) return 'cohere';
+      if (/ernie|baidu/.test(text)) return 'baidu';
+      if (/glm|zhipu/.test(text)) return 'zhipu';
       return '';
     }
 
@@ -1269,6 +1273,10 @@ window.__ModuleLoader__.load({
       qwen: ['qwen', 'tongyi', 'alibaba'],
       moonshot: ['moonshot', 'kimi'],
       grok: ['xai', 'grok'],
+      nvidia: ['nvidia'],
+      cohere: ['cohere'],
+      baidu: ['baidu'],
+      zhipu: ['zhipu', 'z-ai'],
     };
 
     /**

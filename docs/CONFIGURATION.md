@@ -98,7 +98,11 @@ routeMismatch({ provider: 'r10', model: 'cmc-b/deepseek/deepseek-v4.1-flash' }) 
 routeMismatch({ provider: 'deepseek', model: 'deepseek-chat' })                  // false
 ```
 
-`VENDOR_ROUTES` in `client.src.js` is the table of provider-name aliases (`anthropic` for `claude`, `google` for `gemini`, `xai` for `grok`, …). A vendor missing from it is never flagged — silence is the correct answer when there is nothing to compare.
+`VENDOR_ROUTES` in `client.src.js` is the table of provider-name aliases (`anthropic` for `claude`, `google` for `gemini`, `xai` for `grok`, `meta` for `llama`, `alibaba` for `qwen`, …). A vendor missing from the table is never flagged — silence is the correct answer when there is nothing to compare.
+
+Recognised vendors today: `deepseek`, `claude`, `openai`, `gemini`/`gemma`, `llama`, `mistral`, `qwen`, `moonshot`, `grok`, `nvidia`, `cohere`, `baidu`, `zhipu`/`glm`.
+
+If your provider is an aggregator, nearly every model will carry the warning. That is accurate: those models are served by the aggregator's endpoint, not the vendor's.
 
 ## Resetting
 

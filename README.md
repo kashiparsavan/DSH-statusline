@@ -189,9 +189,12 @@ The comparison is deliberately conservative, because a false alarm here would tr
 | | |
 |---|---|
 | vendor detection | looks at the **model id only** (`modelVendor`), never the provider — `modelFamily` merges both, which would read the provider back out of the provider and could never disagree |
-| route aliases | a provider id is named after the company, not the family: `anthropic` serves `claude`, `google` serves `gemini`, `xai` serves `grok`. Comparing against the vendor word alone would flag every first-party route, so `VENDOR_ROUTES` carries the aliases |
-| unknown vendors | an id that names no vendor the table knows (`nvidia/nemotron-…`, `kilo-auto/free`) is never flagged; silence is the correct answer when there is nothing to compare |
+| vendors recognised | `deepseek`, `claude`, `openai`, `gemini`/`gemma`, `llama`, `mistral`, `qwen`, `moonshot`, `grok`, `nvidia`, `cohere`, `baidu`, `zhipu`/`glm` |
+| route aliases | a provider id is named after the company, not the family: `anthropic` serves `claude`, `google` serves `gemini`, `xai` serves `grok`, `meta` serves `llama`, `alibaba` serves `qwen`. Comparing against the vendor word alone would flag every first-party route, so `VENDOR_ROUTES` carries the aliases |
+| unknown vendors | an id that names no vendor the table knows (`kilo-auto/free`, `reflection/beam-free`, `stealth/glyph-cluster`) is never flagged; silence is the correct answer when there is nothing to compare |
 | no route | a session with no recorded provider is never flagged |
+
+On an aggregator route most models are third-party names, so the warning is on a lot — that is the honest reading, not a malfunction. A model you can pick from `kilo-gateway` or an `r10` reseller is not being served by the vendor's own endpoint, and the tag says so.
 
 The honesty limit is worth stating plainly: this says *the id names a vendor this route is not*, which is checkable. It does **not** claim the weights are different, and it cannot — only the route knows that. Treat a relabel as a prompt to check the provider, not as proof of substitution.
 

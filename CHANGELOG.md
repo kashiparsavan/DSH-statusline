@@ -15,7 +15,7 @@ So when the id names a vendor the route does not belong to, the ribbon shows bot
 - `data-sb-rb="relabel"` on the tag, the provider and family mark turn amber, and `≠` is printed between route and id — `r10/≠deepseek-v4.1-flash`;
 - the tooltip is replaced with a sentence naming the route, the vendor and the id.
 
-The comparison is deliberately conservative: vendor detection looks at the **model id only** (never the provider), provider ids resolve through an alias table (`anthropic`→`claude`, `google`→`gemini`, `xai`→`grok`), and an id naming no known vendor is never flagged. Silence is the default, because a false alarm teaches readers to ignore the warning. Amber, not red: a reseller route is unusual, not an error, and the colour is a fixed literal rather than a palette variable — a warning that recolours with the theme stops being a warning.
+The comparison is deliberately conservative: vendor detection looks at the **model id only** (never the provider), provider ids resolve through an alias table (`anthropic`→`claude`, `google`→`gemini`, `xai`→`grok`, `meta`→`llama`, `alibaba`→`qwen`), and an id naming no known vendor is never flagged. Vendors recognised: `deepseek`, `claude`, `openai`, `gemini`/`gemma`, `llama`, `mistral`, `qwen`, `moonshot`, `grok`, `nvidia`, `cohere`, `baidu`, `zhipu`/`glm`. Silence is the default, because a false alarm teaches readers to ignore the warning. Amber, not red: a reseller route is unusual, not an error, and the colour is a fixed literal rather than a palette variable — a warning that recolours with the theme stops being a warning.
 
 The tag degrades on the **header's own inline size**, not the viewport: >720px full, ≤720px provider/namespace dropped, ≤560px effort dropped, ≤420px hidden. Its namespace drops rather than ellipsizing, because a namespaced id is mostly path and cutting from the end would keep the path while discarding the one word a reader recognises.
 
@@ -33,7 +33,7 @@ Switchable in **Settings → Plugins → model ribbon**; `localStorage["dsh.stat
 - **An id tail could be sliced mid-glyph** by the parent's clip; it now ellipsizes.
 - **The effort caption was a 9.5px `opacity:.55` whisper** for the one dimension that changes behaviour. Now 10.5px in `--dsw-alias-label-tertiary`.
 - **The ribbon's surface bypassed the host token.** It now uses `--dsw-alias-fill-tsp-secondary` with the accent tint applied over it via `color-mix()` where supported.
-- **`anthropic` was flagged as a relabel.** Provider ids are named after companies, not model families; the alias table fixes it and the classifier is now checked against 18 route/model pairs.
+- **`anthropic` was flagged as a relabel.** Provider ids are named after companies, not model families; the alias table fixes it and the classifier is now checked against 30 route/model pairs, including every vendor-named model in a real aggregator config.
 
 ## [2026-11-14]
 
