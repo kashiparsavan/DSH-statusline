@@ -384,13 +384,22 @@ window.__ModuleLoader__.load({
       '.dsh-sb-ribbon .sb-rb-id{display:inline-flex;align-items:baseline;min-width:0;overflow:hidden}' +
       '.dsh-sb-ribbon .sb-rb-provider{flex:0 0 auto;color:var(--dsw-alias-label-tertiary);font-size:11px}' +
       '.dsh-sb-ribbon .sb-rb-path{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary)}' +
-      /* The relabel seam. Amber, not red: a reseller route is unusual, not an
-         error, and it must not recolour with the palette - a warning that
-         follows the theme stops being a warning. */
-      '.dsh-sb-ribbon[data-sb-rb="relabel"]{border-color:rgba(255,196,0,.45);background:rgba(255,196,0,.10)}' +
-      '.dsh-sb-ribbon .sb-rb-warn{flex:0 0 auto;margin:0 1px;color:#ffc400;font-weight:700;font-size:11px}' +
-      '.dsh-sb-ribbon[data-sb-rb="relabel"] .sb-rb-provider{color:#ffc400}' +
-      '.dsh-sb-ribbon[data-sb-rb="relabel"] .sb-mark{color:#ffc400}' +
+      /* The relabel seam, carried by *shape and glyph*, not by hue.
+         The tint follows the palette accent like everything else here, so a
+         themed header never argues with the strip beneath it - a fixed amber
+         chip in a red or violet UI reads as a different component rather than
+         as a warning. The meaning lives in the dashed border and the `≠`, which
+         is also the more accessible arrangement: a warning signalled by colour
+         alone is invisible to a reader who cannot separate the two hues. */
+      '.dsh-sb-ribbon[data-sb-rb="relabel"]{border-style:dashed;border-color:var(--dsw-alias-state-business-primary,var(--dsw-alias-border-l2,rgba(128,136,152,.55)))}' +
+      '.dsh-sb-ribbon .sb-rb-warn{flex:0 0 auto;margin:0 1px;color:var(--dsw-alias-label-primary);font-weight:700;font-size:11px}' +
+      /* Where color-mix exists, the warning keeps the palette's own voice: a
+         tinted surface, a brighter seam, and the provider lifted toward white
+         so it stays readable on every palette rather than only on dark ones. */
+      '@supports (background:color-mix(in srgb,red 10%,transparent)){' +
+        '.dsh-sb-ribbon[data-sb-rb="relabel"]{border-color:color-mix(in srgb,var(--sb-rb-accent) 72%,transparent);background:color-mix(in srgb,var(--sb-rb-accent) 16%,transparent)}' +
+        '.dsh-sb-ribbon[data-sb-rb="relabel"] .sb-rb-provider{color:color-mix(in srgb,var(--sb-rb-accent) 55%,#ffffff)}' +
+      '}' +
       /* The tail is the part a reader is checking, so it is the last thing to
          give way - and when even it cannot fit, it ellipsizes rather than being
          sliced mid-glyph by the parent's clip. */

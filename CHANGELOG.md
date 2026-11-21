@@ -12,10 +12,12 @@ It exists for one reason beyond convenience: **a model id is a label the route c
 
 So when the id names a vendor the route does not belong to, the ribbon shows both halves of the seam instead of repeating one as though it were the other:
 
-- `data-sb-rb="relabel"` on the tag, the provider and family mark turn amber, and `≠` is printed between route and id — `r10/≠deepseek-v4.1-flash`;
+- `data-sb-rb="relabel"` on the tag, a **dashed** seam and a palette-accent tint, and `≠` printed between route and id — `r10/≠deepseek-v4.1-flash`;
 - the tooltip is replaced with a sentence naming the route, the vendor and the id.
 
-The comparison is deliberately conservative: vendor detection looks at the **model id only** (never the provider), provider ids resolve through an alias table (`anthropic`→`claude`, `google`→`gemini`, `xai`→`grok`, `meta`→`llama`, `alibaba`→`qwen`), and an id naming no known vendor is never flagged. Vendors recognised: `deepseek`, `claude`, `openai`, `gemini`/`gemma`, `llama`, `mistral`, `qwen`, `moonshot`, `grok`, `nvidia`, `cohere`, `baidu`, `zhipu`/`glm`. Silence is the default, because a false alarm teaches readers to ignore the warning. Amber, not red: a reseller route is unusual, not an error, and the colour is a fixed literal rather than a palette variable — a warning that recolours with the theme stops being a warning.
+The seam is carried by shape and glyph rather than hue: the tint follows the same palette accent as the rest of the tag, so the warning never fights the strip beneath it, and a reader who cannot separate two hues still sees the dashed border and the `≠`. (An earlier cut used a fixed amber literal here; it looked like a different component inside a themed header.)
+
+The comparison is deliberately conservative: vendor detection looks at the **model id only** (never the provider), provider ids resolve through an alias table (`anthropic`→`claude`, `google`→`gemini`, `xai`→`grok`, `meta`→`llama`, `alibaba`→`qwen`), and an id naming no known vendor is never flagged. Vendors recognised: `deepseek`, `claude`, `openai`, `gemini`/`gemma`, `llama`, `mistral`, `qwen`, `moonshot`, `grok`, `nvidia`, `cohere`, `baidu`, `zhipu`/`glm`. Silence is the default, because a false alarm teaches readers to ignore the warning. The tint follows the palette rather than a fixed literal — a warning that fights the theme reads as a different component — and the meaning is carried by the dashed seam and the `≠` so it survives any palette and any colour vision.
 
 The tag degrades on the **header's own inline size**, not the viewport: >720px full, ≤720px provider/namespace dropped, ≤560px effort dropped, ≤420px hidden. Its namespace drops rather than ellipsizing, because a namespaced id is mostly path and cutting from the end would keep the path while discarding the one word a reader recognises.
 

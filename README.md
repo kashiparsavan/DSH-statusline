@@ -178,11 +178,13 @@ A model id is a label the **route** chose. The harness records which provider en
 What the tag can do is show both halves of the seam instead of repeating one as though it were the other. When the id names a vendor the provider route does not belong to, the ribbon:
 
 - marks itself `data-sb-rb="relabel"`,
-- turns the provider and the family mark amber,
+- switches the border to a **dashed** seam and tints the surface with the palette accent,
 - prints `≠` between the route and the id — `r10/≠deepseek-v4.1-flash`,
 - and replaces the tooltip with a sentence naming the route, the vendor and the id.
 
-Amber rather than red on purpose: a reseller route is unusual, not an error, and the colour is a fixed literal rather than a palette variable — a warning that recolours with the theme stops being a warning.
+The seam is carried by **shape and glyph, not hue**. The tint follows the same palette accent as the rest of the tag, so a themed header never argues with the strip beneath it — a fixed amber chip in a red or violet UI reads as a different component rather than as a warning. That is also the more accessible arrangement: a warning signalled by colour alone is invisible to a reader who cannot separate the two hues, whereas a dashed border and a `≠` survive any palette, any theme and any colour vision.
+
+(Amber stays where it is genuinely semantic: the context gauge turns amber at 75% and red at 90%, and those two never theme, because a capacity warning that recolours itself stops being one.)
 
 The comparison is deliberately conservative, because a false alarm here would train readers to ignore it:
 

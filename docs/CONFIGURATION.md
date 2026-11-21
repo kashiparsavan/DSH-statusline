@@ -63,7 +63,7 @@ A theme is four custom properties, so adding one is a five-line patch. The accen
 | `cyberwar` | `#ff2b2b` | cyberwar |
 | `superblack` | `#ffffff` | super black |
 
-The palette also tints the model ribbon's surface and its family mark, which is what keeps the header tag reading as the same instrument as the bar below. It deliberately does **not** tint the relabel warning — see below.
+The palette also tints the model ribbon's surface and its family mark, which is what keeps the header tag reading as the same instrument as the bar below. The relabel warning uses the same accent, with a dashed seam and a `≠` carrying the meaning rather than a separate colour.
 
 ## Phrases
 
@@ -89,7 +89,9 @@ Width stops at 900px rather than shrinking further: the row is `nowrap` and the 
 
 `ribbon` controls the header tag. On by default.
 
-When the model id names a vendor the provider route does not belong to, the ribbon marks itself `data-sb-rb="relabel"` and shows `≠` between route and id. This is not configurable, because making it dismissible would defeat the point; turn the whole ribbon off if you do not want it.
+When the model id names a vendor the provider route does not belong to, the ribbon marks itself `data-sb-rb="relabel"`, switches its border to a dashed seam and shows `≠` between route and id. This is not configurable, because making it dismissible would defeat the point; turn the whole ribbon off if you do not want it.
+
+The tint follows the active palette accent, so the tag keeps matching the strip; the dashed border and the `≠` carry the warning. Nothing about it depends on distinguishing two hues.
 
 ```js
 // The classifier, for reference — see README for the full reasoning.
