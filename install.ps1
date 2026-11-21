@@ -5,7 +5,7 @@
 .DESCRIPTION
     One command, from anywhere:
 
-        irm https://raw.githubusercontent.com/devopshelper/DSH-statusline/main/install.ps1 | iex
+        irm https://raw.githubusercontent.com/kashiparsavan/DSH-statusline/main/install.ps1 | iex
 
     The script installs a checkout (cloned to -InstallDir, or the checkout the
     profile is already linked to) and performs both halves of a bundle install:
@@ -57,14 +57,14 @@
     .\install.ps1
     .\install.ps1 -Profile web -DryRun
     .\install.ps1 -Update
-    irm https://raw.githubusercontent.com/devopshelper/DSH-statusline/main/install.ps1 | iex
+    irm https://raw.githubusercontent.com/kashiparsavan/DSH-statusline/main/install.ps1 | iex
 #>
 [CmdletBinding()]
 param(
     [string]$Profile = $(if ($env:DSH_PROFILE) { $env:DSH_PROFILE } else { '' }),
     [string]$Source = '',
     [string]$InstallDir = $(if ($env:DSH_STATUSLINE_HOME) { $env:DSH_STATUSLINE_HOME } else { Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'DSH\dsh-statusline' }),
-    [string]$RepoUrl = 'https://github.com/devopshelper/DSH-statusline',
+    [string]$RepoUrl = 'https://github.com/kashiparsavan/DSH-statusline',
     [string]$Branch = 'main',
     [string]$DshPath = '',
     [switch]$Update,
@@ -438,7 +438,7 @@ Write-Ok ('bundles:    ' + ($bundles -join ', '))
 
 Write-Step 'Done'
 
-$updateCommand = 'irm https://raw.githubusercontent.com/devopshelper/DSH-statusline/main/install.ps1 | iex'
+$updateCommand = 'irm https://raw.githubusercontent.com/kashiparsavan/DSH-statusline/main/install.ps1 | iex'
 Write-Host ''
 Write-Host "Installed $($script:PackageName) v$($package.version) into profile '$Profile'." -ForegroundColor Green
 Write-Host ''
