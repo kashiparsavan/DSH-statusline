@@ -179,24 +179,35 @@ function Get-DshCmd([string]$AppExe) {
 }
 
 function Invoke-DshCli([string[]]$CliArgs) {
-    if ($script:DshCmd -ne $null) {
-        & $script:DshCmd @CliArgs | Out-Host
-        return $LASTEXITCODE
-    }
-    if ($script:AppExe -ne $null) {
-        $cli = Join-Path (Split-Path -Path $script:AppExe -Parent) 'resources\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js'
-        if (-not (Test-Path -LiteralPath $cli)) { return 127 }
-        $old = $env:ELECTRON_RUN_AS_NODE
-        $env:ELECTRON_RUN_AS_NODE = '1'
-        try {
-            & $script:AppExe --expose-internals $cli @CliArgs | Out-Host
+    # `dsh` and the pnpm it forwards to both write progress to stderr, and
+    # Windows PowerShell 5.1 turns a native command's stderr into a terminating
+    # error while $ErrorActionPreference is 'Stop'. The exit code is the signal
+    # here, so the preference is relaxed around the call and restored after -
+    # otherwise a chatty but successful install aborts on its own output.
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        if ($script:DshCmd -ne $null) {
+            & $script:DshCmd @CliArgs | Out-Host
             return $LASTEXITCODE
-        } finally {
-            if ($old -eq $null) { Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue }
-            else { $env:ELECTRON_RUN_AS_NODE = $old }
         }
+        if ($script:AppExe -ne $null) {
+            $cli = Join-Path (Split-Path -Path $script:AppExe -Parent) 'resources\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js'
+            if (-not (Test-Path -LiteralPath $cli)) { return 127 }
+            $old = $env:ELECTRON_RUN_AS_NODE
+            $env:ELECTRON_RUN_AS_NODE = '1'
+            try {
+                & $script:AppExe --expose-internals $cli @CliArgs | Out-Host
+                return $LASTEXITCODE
+            } finally {
+                if ($old -eq $null) { Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue }
+                else { $env:ELECTRON_RUN_AS_NODE = $old }
+            }
+        }
+        return 127
+    } finally {
+        $ErrorActionPreference = $previousPreference
     }
-    return 127
 }
 
 function Invoke-Node([string]$ScriptPath, [string[]]$ScriptArgs) {
@@ -329,7 +340,7 @@ if ($Source -eq '' -or $Source -eq $null) {
     if ($gitCommand -ne $null) {
         Write-Ok "cloning $RepoUrl ($Branch)"
         New-Item -ItemType Directory -Force -Path (Split-Path -Path $InstallDir -Parent) | Out-Null
-        & $gitCommand clone --depth 1 --branch $Branch $RepoUrl $InstallDir | Out-Host
+        & $gitCommand clone --depth 1 --branch $Branch $RepoUrl $InstallDir 2>&1 | Out-Host
         if ($LASTEXITCODE -ne 0) { Fail "git clone failed with $LASTEXITCODE" }
     } else {
         Install-FromZip $InstallDir
@@ -343,9 +354,43 @@ if ($Source -eq '' -or $Source -eq $null) {
         else { Write-Ok 'would re-download the zip checkout before installing' }
     } elseif (Test-Path -LiteralPath (Join-Path $Source '.git')) {
         if ($gitCommand -ne $null) {
+            # A checkout made by an earlier installer points at whichever
+            # repository that installer knew about. Pulling from it would fetch
+            # THAT project and then report success - the classic way an "update"
+            # silently reinstalls the old build. Repair the remote first, then
+            # pull from this fork by URL so it cannot matter either way.
+            #
+            # The probe is judged by its output, not by $LASTEXITCODE: capturing
+            # a native command's stdout through a pipeline leaves that variable
+            # at -1, which is how the first version of this repair never ran.
+            $originUrl = ([string](& $gitCommand -C $Source remote get-url origin 2>$null | Select-Object -First 1)).Trim()
+            if ($originUrl -ne '' -and $originUrl -ne $RepoUrl.Trim()) {
+                Write-Ok "repointing origin: $originUrl -> $RepoUrl"
+                & $gitCommand -C $Source remote set-url origin $RepoUrl 2>$null | Out-Host
+            }
             Write-Ok 'pulling the latest changes'
-            & $gitCommand -C $Source pull --ff-only | Out-Host
-            if ($LASTEXITCODE -ne 0) { Write-Warn 'git pull failed; installing the checkout as it is' }
+            # Windows PowerShell 5.1 raises a NativeCommandError for anything a
+            # native command writes to stderr (git reports its progress there),
+            # and this script runs with $ErrorActionPreference = 'Stop' - so the
+            # pull would kill the installer mid-update even though it succeeded.
+            # The preference is relaxed for exactly this call, then restored.
+            $previousPreference = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                & $gitCommand -C $Source pull --ff-only $RepoUrl $Branch 2>$null | Out-Host
+                $pullCode = $LASTEXITCODE
+            } finally {
+                $ErrorActionPreference = $previousPreference
+            }
+            if ($pullCode -ne 0) {
+                if ($Force) {
+                    Write-Warn 'git pull failed; -Force was given, so the checkout is installed as it stands'
+                } else {
+                    Fail ("git pull failed with $pullCode." +
+                        "`n       The checkout at $Source was NOT updated, so installing it would install the old build." +
+                        "`n       Pull it yourself, or pass -Force to install it as it stands.")
+                }
+            }
         } else {
             Write-Warn 'git is not installed; using the checkout as it is'
         }
@@ -385,7 +430,12 @@ if ($DryRun) {
 } else {
     if ($Update -or $Force) {
         Write-Ok 'relinking for a fresh module generation'
-        $null = Invoke-DshCli @('plugin', '--profile', $Profile, 'remove', $script:PackageName)
+        # Removing the old link is only preparation. A profile that kept the
+        # bundle entry but lost the dependency makes pnpm refuse with
+        # CANNOT_REMOVE_MISSING_DEPS; the `add` below repairs exactly that
+        # state, so a failure here is reported and then ignored.
+        $removeCode = Invoke-DshCli @('plugin', '--profile', $Profile, 'remove', $script:PackageName)
+        if ($removeCode -ne 0) { Write-Warn 'could not remove the previous link (nothing registered?); relinking anyway' }
     }
     $code = Invoke-DshCli $addArgs
     if ($code -ne 0) { Fail "dsh plugin add exited with $code" }
