@@ -35,7 +35,10 @@ Switchable in **Settings → Plugins → model ribbon**; `localStorage["dsh.stat
 - **An id tail could be sliced mid-glyph** by the parent's clip; it now ellipsizes.
 - **The effort caption was a 9.5px `opacity:.55` whisper** for the one dimension that changes behaviour. Now 10.5px in `--dsw-alias-label-tertiary`.
 - **The ribbon's surface bypassed the host token.** It now uses `--dsw-alias-fill-tsp-secondary` with the accent tint applied over it via `color-mix()` where supported.
-- **`anthropic` was flagged as a relabel.** Provider ids are named after companies, not model families; the alias table fixes it and the classifier is now checked against 30 route/model pairs, including every vendor-named model in a real aggregator config.
+- **A router's id is never first-party.** Route ids naming a `router`, `gateway`, `proxy`, `relay`, `litellm`, `oneapi`/`newapi` or a reseller are treated as third-party even when the id embeds a vendor word, so `openai-relay` carrying `gpt-5` now flags instead of passing the alias test.
+- **The updater no longer reinstalls the old build.** A checkout created by an earlier installer points at whichever repository that installer knew; `install.ps1 -Update` pulled from *that*, then reported success. It now repoints `origin` at this fork and pulls by URL, and fails loudly instead of installing a stale checkout (`-Force` overrides).
+- **The installer survives chatty tools.** Windows PowerShell 5.1 with `$ErrorActionPreference = 'Stop'` turns a native command's stderr into a terminating error, so `git` progress and `pnpm` notices aborted an otherwise successful install. The preference is relaxed around those calls, and a failing `plugin remove` is now reported and ignored — `plugin add` repairs that state.
+- **`anthropic` was flagged as a relabel.** Provider ids are named after companies, not model families; the alias table fixes it and the classifier is now checked against 34 route/model pairs, including every vendor-named model in a real aggregator config.
 
 ## [2026-11-14]
 

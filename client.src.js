@@ -1289,6 +1289,20 @@ window.__ModuleLoader__.load({
     };
 
     /**
+     * Route names that are, by construction, somebody else's endpoint.
+     *
+     * A gateway, a router, a relay, a reseller: none of them is the vendor
+     * whose model name it carries. Without this, a route called
+     * `openai-relay` would satisfy the alias test (`openai` appears in it) and
+     * the warning would stay silent on exactly the kind of route that most
+     * needs it.
+     *
+     * Deliberately narrow: only words that no vendor would put in its own
+     * route id. A first-party `deepseek-account` is untouched.
+     */
+    const ROUTER_ROUTES = /(router|gateway|proxy|relay|aggregat|litellm|oneapi|newapi|reseller|resolver|\drouter)/i;
+
+    /**
      * Whether the id names a vendor the route does not belong to.
      *
      * This is the honest answer to "my model is DeepSeek 4.1 but it answered
@@ -1305,6 +1319,8 @@ window.__ModuleLoader__.load({
       if (vendor === '') return false;
       const route = selection.provider.toLowerCase();
       if (route === '') return false;
+      /* A router or gateway is never the vendor, whatever its id contains. */
+      if (ROUTER_ROUTES.test(route)) return true;
       const aliases = VENDOR_ROUTES[vendor] || [vendor];
       for (var i = 0; i < aliases.length; i += 1) {
         if (route.indexOf(aliases[i]) >= 0) return false;
